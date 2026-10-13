@@ -1,0 +1,33 @@
+# data (large) — reproduced by src/data/download.py
+data/raw/*
+data/interim/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+# keep split definitions and the sample: they are small and part of the deliverable
+!data/splits/
+!data/sample/
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# environments & secrets
+.env
+.venv/
+venv/
+
+# model checkpoints are large; the final ones are released separately
+results/checkpoints/
+
+# node
+app/frontend/node_modules/
+app/frontend/dist/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

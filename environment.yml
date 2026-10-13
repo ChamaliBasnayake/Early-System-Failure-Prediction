@@ -1,0 +1,33 @@
+# Reproducible environment for the BGL failure-prediction project (CPU only).
+# Create with:  conda env create -f environment.yml
+# Activate:     conda activate bgl
+name: bgl
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cpu
+      - torch==2.4.1
+      - pandas==2.2.2
+      - pyarrow==17.0.0
+      - numpy==1.26.4
+      - scikit-learn==1.5.1
+      - xgboost==2.1.1
+      - drain3==0.9.11
+      - captum==0.7.0
+      - sentence-transformers==3.0.1
+      - fastapi==0.112.2
+      - uvicorn[standard]==0.30.6
+      - sqlalchemy==2.0.32
+      - psycopg2-binary==2.9.9
+      - pydantic==2.8.2
+      - python-multipart==0.0.9
+      - google-generativeai==0.7.2
+      - matplotlib==3.9.2
+      - seaborn==0.13.2
+      - pyyaml==6.0.2
+      - tqdm==4.66.5
+      - pytest==8.3.2
+      - jupyterlab==4.2.5

@@ -1,0 +1,9 @@
+# Project-wide constants. Phase 2 will add windows.yaml and drain3.ini; Phases 3-5 add model configs.
+project_name: bgl-failure-prediction
+seeds: [11, 22, 33]
+dataset:
+  name: BGL (BlueGene/L) system logs
+  source: Loghub collection, Zenodo DOI 10.5281/zenodo.8196385
+  file: BGL.zip
+  md5: 4452953c470f2d95fcb32d5f6e733f7a
+  licence: CC BY 4.0 (cite Zhu et al., ISSRE 2023 and Oliner & Stearley, DSN 2007)
