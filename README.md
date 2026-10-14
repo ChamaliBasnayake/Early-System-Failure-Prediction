@@ -15,8 +15,8 @@ scheduling, instead of discovering the failure after it happens.
 | Phase | State |
 |---|---|
 | 0 Environment & repository | done |
-| 1 Data acquisition & EDA | — |
-| 2 Dataset construction & split | — |
+| 1 Data acquisition & EDA | done |
+| 2 Dataset construction & split | in progress |
 | 3 Baselines | — |
 | 4 First neural model | — |
 | 5 Optimisation study | — |
@@ -35,7 +35,13 @@ Windows setup (tools, E: drive layout, Docker disk location): see `docs/SETUP_WI
 conda env create -f environment.yml
 conda activate bgl
 pytest -q                         # Phase 0 smoke tests
-# Phase 1 onwards: commands are added here as each phase is completed.
+# Phase 1 — data
+python -m src.data.download           # BGL.zip from Zenodo, MD5 check, unzip (~700 MB)
+python -m src.data.parse_bgl          # → data/interim/bgl_parsed.parquet
+python -m src.data.eda                # → results/eda_summary.md + results/figures/eda_*.png
+python -m src.data.failure_set        # → data/interim/failure_episodes.parquet + results/failure_set_summary.md
+python -m src.data.make_sample        # → data/sample/bgl_sample.log (20k lines, committed)
+python -m src.data.parse_bgl --sample && python -m src.data.eda --sample && python -m src.data.failure_set --sample
 ```
 
 ## Repository layout
@@ -46,7 +52,7 @@ data/raw        BGL.log — downloaded by src/data/download.py (git-ignored)
 data/interim    parsed tables, templates, windows (git-ignored)
 data/splits     chronological split definitions (committed)
 data/sample     ~20k-line representative sample so the code can be tested
-docs/           failure_definition.md, preprocessing.md, design_decisions.md
+docs/           failure_definition.md, eda_findings.md, preprocessing.md, design_decisions.md
 src/data        download, parse, templates, windows, splits, leakage checks
 src/models      baselines, lstm, cnn, train, evaluate_final
 src/xai         integrated gradients, perturbation checks

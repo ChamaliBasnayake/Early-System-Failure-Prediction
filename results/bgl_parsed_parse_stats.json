@@ -1,0 +1,7 @@
+{
+  "input": "E:\\Projects\\bgl-failure-prediction\\data\\raw\\BGL.log",
+  "output": "E:\\Projects\\bgl-failure-prediction\\data\\interim\\bgl_parsed.parquet",
+  "lines_total": 4747963,
+  "lines_malformed_dropped": 0,
+  "lines_kept": 4747963
+}
