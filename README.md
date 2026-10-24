@@ -42,6 +42,17 @@ python -m src.data.eda                # → results/eda_summary.md + results/fig
 python -m src.data.failure_set        # → data/interim/failure_episodes.parquet + results/failure_set_summary.md
 python -m src.data.make_sample        # → data/sample/bgl_sample.log (20k lines, committed)
 python -m src.data.parse_bgl --sample && python -m src.data.eda --sample && python -m src.data.failure_set --sample
+
+# Phase 2 — dataset construction (one split, templates fitted on train only, windows with gap, leakage report)
+python -m src.data.splits             # → data/splits/split_v1.json (+ rollA, rollB), results/split_report.md
+python -m src.data.templates          # → data/interim/drain_miner.pkl, templates.csv, events.parquet, results/template_report.md
+python -m src.data.windows            # → data/interim/windows.parquet, results/windows_summary.md, results/class_distribution.csv
+python -m src.data.leakage_checks     # → results/leakage_report.txt (exits non-zero on failure)
+python -m src.data.unk_diagnostics        # which messages are unseen after the training cut (software-upgrade finding)
+python -m src.data.precursor_diagnostics  # is there log content before failures, and at which hardware level?
+python -m src.data.window_diagnostics     # content by class and channel
+python -m src.data.templates --transductive-control   # leaky protocol of prior work — CONTROL ONLY (outputs *_tc)
+# same four with --sample to exercise the pipeline on the committed sample
 ```
 
 ## Repository layout

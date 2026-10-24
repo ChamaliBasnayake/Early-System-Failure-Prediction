@@ -1,0 +1,18 @@
+LEAKAGE REPORT (split_v1_sample)
+============================================================
+[PASS] chronological order: train ≤ 2005-08-15 15:18:52+00:00 < validation [2005-08-26 19:03:30+00:00 … 2005-11-20 18:35:38+00:00] < test ≥ 2005-11-21 01:13:32+00:00
+[PASS] no specific window content shared across splits: 0 specific hashes (≥3 items) in >1 split
+[INFO] generic windows (<3 items): 551 total, 113 patterns recur across splits (allowed by design)
+[PASS] no target-failure line inside a kept window: 0 kept windows contain a KERN* target line
+[PASS] mass-incident windows excluded: 19 windows marked mass_incident (labels -1)
+[INFO] UNK rate train: 0.000%  (templates fitted before 2005-08-16 00:00:00+00:00)
+[INFO] UNK rate validation: 2.431%  (templates fitted before 2005-08-16 00:00:00+00:00)
+[INFO] UNK rate test: 0.009%  (templates fitted before 2005-08-16 00:00:00+00:00)
+[INFO] exclusion reasons: none=1171, episode_in_window=68, mass_incident=19, post_episode=5
+[INFO] label_1: -1=92, 0=1006, 1=165
+[INFO] label_5: -1=160, 0=946, 1=157
+[INFO] label_15: -1=317, 0=796, 1=150
+[INFO] label_30: -1=467, 0=646, 1=150
+[PASS] model inputs exclude identifiers/labels: inputs = ['templates', 'counts', 'dts']
+============================================================
+RESULT: ALL CHECKS PASSED

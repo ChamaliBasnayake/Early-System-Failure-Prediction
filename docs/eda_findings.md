@@ -38,6 +38,19 @@ schedule; collapsing of consecutive duplicate lines into (template, repeat-count
 and the expectation that performance may differ between the busy summer and the quiet winter,
 which the rolling-origin evaluation will test.
 
+## 4. Failures have no local log precursor; the signal is system-wide
+Measured directly (results/precursor_diagnostics.md): in the hour before a target failure the failing node
+has logged nothing in 90–97 % of cases, its node card in 85 %, its midplane in 66 %, its rack in 60 %;
+the whole system is active in ~90 % of cases with elevated volume (median 83–123 lines vs 12 at random
+times). Separately, a control-software upgrade in October 2005 (idoproxydb V1R1M2_254/255) introduces new
+RAS message types: 61 % of test-period lines belong to templates never seen in training (3.4 % in validation).
+
+*Consequences:* the unit of prediction is the midplane, with two input channels (unit-local and
+system-global, 60 min); negatives are sampled uniformly over (unit, time) so emptiness is not a label
+proxy; minute-scale per-node prediction is reported as infeasible for lack of input; the UNK rate and the
+upgrade date are protocol fields; a pretrained text encoder over message text is the principled way to
+represent messages unseen in training, and a Drain-on-all-data run is kept only as a labelled control.
+
 ## Data-quality notes for Q1
 - 0 malformed lines dropped by the parser; 316 lines carry shifted fields (level values such as
   "Kill", "microseconds"), all non-alert and harmless.

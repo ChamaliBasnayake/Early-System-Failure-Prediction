@@ -25,10 +25,14 @@ from src.utils.paths import DATA_INTERIM, RESULTS
 FIG = RESULTS / "figures"
 
 
+SUFFIX = ""
+
+
 def _save(fig: plt.Figure, name: str) -> None:
     FIG.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
-    fig.savefig(FIG / name, dpi=150)
+    stem, ext = name.rsplit(".", 1)
+    fig.savefig(FIG / f"{stem}{SUFFIX}.{ext}", dpi=150)
     plt.close(fig)
 
 
@@ -53,7 +57,7 @@ def run(parquet: Path, out_md: Path) -> None:
     fig, ax = plt.subplots(figsize=(10, 3))
     per_day.plot(ax=ax); ax.set_ylabel("lines/day"); ax.set_title("Log volume per day")
     _save(fig, "eda_01_volume_per_day.png")
-    add("## Volume per day\n![](figures/eda_01_volume_per_day.png)\n")
+    add(f"## Volume per day\n![](figures/eda_01_volume_per_day{SUFFIX}.png)\n")
     add(f"Median {per_day.median():,.0f} lines/day; max {per_day.max():,.0f}; "
         f"{(per_day == 0).sum()} days with no lines.\n")
 
@@ -63,7 +67,7 @@ def run(parquet: Path, out_md: Path) -> None:
     ax.hist(np.log10(per_node.values), bins=40); ax.set_xlabel("log10(lines per node)"); ax.set_ylabel("nodes")
     ax.set_title("Lines per node")
     _save(fig, "eda_02_lines_per_node.png")
-    add("## Lines per node\n![](figures/eda_02_lines_per_node.png)\n")
+    add(f"## Lines per node\n![](figures/eda_02_lines_per_node{SUFFIX}.png)\n")
     add(f"Top 1% of nodes produce {per_node.head(max(1, len(per_node)//100)).sum() / len(df):.1%} of all lines.\n")
 
     # 3. alert categories
@@ -71,7 +75,7 @@ def run(parquet: Path, out_md: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
     cats.head(25).plot.barh(ax=ax); ax.invert_yaxis(); ax.set_xscale("log"); ax.set_title("Alert categories (top 25, log scale)")
     _save(fig, "eda_03_alert_categories.png")
-    add("## Alert categories\n![](figures/eda_03_alert_categories.png)\n")
+    add(f"## Alert categories\n![](figures/eda_03_alert_categories{SUFFIX}.png)\n")
     add(cats.to_frame("lines").to_markdown() + "\n")
 
     # 4. category × component × level cross-tab (needed for the failure definition)
@@ -92,7 +96,7 @@ def run(parquet: Path, out_md: Path) -> None:
     ax.set_xlabel("log10(seconds between consecutive alerts on same node)"); ax.set_ylabel("count")
     ax.set_title("Alert burstiness")
     _save(fig, "eda_04_alert_gaps.png")
-    add("## Burstiness of alerts\n![](figures/eda_04_alert_gaps.png)\n")
+    add(f"## Burstiness of alerts\n![](figures/eda_04_alert_gaps{SUFFIX}.png)\n")
     add(f"{(gaps <= 1).mean():.1%} of consecutive same-node alerts are ≤1 s apart; "
         f"{(gaps <= 60).mean():.1%} are ≤60 s apart; median gap {gaps.median():.0f} s.\n")
 
@@ -113,7 +117,7 @@ def run(parquet: Path, out_md: Path) -> None:
     hod.plot.bar(ax=ax[0]); ax[0].set_title("All lines by local hour (US/Pacific)")
     hod_alert.plot.bar(ax=ax[1], color="C3"); ax[1].set_title("Alert lines by local hour (US/Pacific)")
     _save(fig, "eda_05_hour_of_day.png")
-    add("## Hour-of-day profile\n![](figures/eda_05_hour_of_day.png)\n")
+    add(f"## Hour-of-day profile\n![](figures/eda_05_hour_of_day{SUFFIX}.png)\n")
 
     add("## Three findings that constrain modelling\n")
     add("This file is regenerated on every run. The findings are written and maintained in `docs/eda_findings.md`.\n")
@@ -126,6 +130,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--sample", action="store_true")
     args = ap.parse_args()
+    global SUFFIX
+    SUFFIX = "_sample" if args.sample else ""
     pq_path = DATA_INTERIM / ("bgl_parsed_sample.parquet" if args.sample else "bgl_parsed.parquet")
     run(pq_path, RESULTS / ("eda_summary_sample.md" if args.sample else "eda_summary.md"))
 

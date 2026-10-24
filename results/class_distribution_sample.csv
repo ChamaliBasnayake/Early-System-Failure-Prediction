@@ -1,0 +1,13 @@
+split,N,windows,positives,negatives,excluded,hard_negatives,positive_incidents,positive_episodes
+train,1,573,140,389,44,1,6,28
+train,5,573,132,339,102,1,6,28
+train,15,573,125,214,234,1,5,25
+train,30,573,125,89,359,1,5,25
+validation,1,411,25,338,48,0,5,5
+validation,5,411,25,328,58,0,5,5
+validation,15,411,25,303,83,0,5,5
+validation,30,411,25,278,108,0,5,5
+test,1,279,0,279,0,0,0,0
+test,5,279,0,279,0,0,0,0
+test,15,279,0,279,0,0,0,0
+test,30,279,0,279,0,0,0,0

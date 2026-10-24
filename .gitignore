@@ -13,6 +13,7 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 *.egg-info/
+*.joblib
 
 # environments & secrets
 .env
@@ -21,6 +22,7 @@ venv/
 
 # model checkpoints are large; the final ones are released separately
 results/checkpoints/
+results/models/
 
 # node
 app/frontend/node_modules/

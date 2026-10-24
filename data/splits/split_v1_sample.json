@@ -1,0 +1,21 @@
+{
+  "name": "split_v1",
+  "method": "chronological; cut dates = next UTC midnight after the incident at the 60% / 80% quantile of target incidents (support only; no window contents or labels)",
+  "train": {
+    "start": "2005-07-01T23:56:35+00:00",
+    "end": "2005-08-16T00:00:00+00:00"
+  },
+  "validation": {
+    "start": "2005-08-16T00:00:00+00:00",
+    "end": "2005-11-21T00:00:00+00:00"
+  },
+  "test": {
+    "start": "2005-11-21T00:00:00+00:00",
+    "end": "2005-11-21T04:08:10+00:00"
+  },
+  "incidents_per_split": {
+    "train": 6,
+    "validation": 5,
+    "test": 0
+  }
+}

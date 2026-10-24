@@ -44,10 +44,11 @@ def test_episodes_mass_incidents_and_pools():
             _row(900, "KERNSTOR"), _row(905, "KERNSTOR"),                       # N1: second episode (gap 870 s > 300)
             _row(0, "APPSEV", comp="APP")]                                      # non-target → hard-negative pool
     rows += [_row(2000 + i % 3, "KERNSTOR", node=f"M{i}") for i in range(40)]  # 40 nodes within 3 s → mass incident
-    ep, mass, nontarget = build_episodes(pd.DataFrame(rows), DEFAULT_CFG)
+    ep, mass, nontarget, mass_events = build_episodes(pd.DataFrame(rows), DEFAULT_CFG)
     assert len(ep) == 2 and list(ep.n_events) == [3, 2]
     assert ep.first_category.iloc[0] == "KERNMC" and ep.dominant_category.iloc[0] == "KERNDTLB"
     assert ep.categories.iloc[0] == "KERNDTLB|KERNMC"
     assert len(mass) == 1 and mass.n_nodes.iloc[0] == 40 and mass.category.iloc[0] == "KERNSTOR"
     assert len(nontarget) == 1 and nontarget.alert_tag.iloc[0] == "APPSEV"
     assert ep.incident_id.nunique() == 2
+    assert len(mass_events) == 40

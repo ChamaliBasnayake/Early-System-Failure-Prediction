@@ -1,0 +1,19 @@
+# Window / label construction (Phase 2, v2 — unit-level, two-channel). FROZEN once windows.parquet is built.
+#
+# Why v2: precursor diagnostics (results/precursor_diagnostics.md) showed that before a node failure the node
+# itself has logged nothing in 90–97 % of cases, its midplane in 66 %, while the SYSTEM is active in ~90 %
+# with elevated volume (median 83 vs 12 lines/hour). So the prediction unit is the MIDPLANE (the unit BGL
+# allocates jobs by) and every window has two channels: the unit's own lines and the whole system's lines.
+unit_level: midplane            # node | nodecard | midplane | rack
+local_window_min: 60            # W_local: unit's own events in [t - W, t]
+global_window_min: 60           # W_global: all events in [t - W, t]
+max_events_local: 256           # last 256 collapsed (text, repeat-count) items per channel
+max_events_global: 256
+lead_times_min: [1, 5, 15, 30]  # gap N: a target failure on the unit must start in [t + N, t + N + H)
+horizon_minutes: 10             # H
+positive_offsets_min: [0, 2, 4, 6, 8]    # extra positive window ends per unit-episode: t = start - N - k
+unit_episode_gap_s: 300         # target episodes on the same unit within this gap = one unit-episode
+post_episode_exclusion_min: 20  # windows ending within this after a unit-episode end are excluded
+uniform_negatives: {train: 40000, validation: 15000, test: 15000}   # (unit, time) pairs drawn uniformly over the split period
+hard_negatives:    {train: 4000,  validation: 2000,  test: 2000}    # window ends 30 s after a NON-target alert on the unit
+seed: 11

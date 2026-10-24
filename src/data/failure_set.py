@@ -26,7 +26,8 @@ Rule (configs/failure_definition.yaml):
 
 Outputs (data/interim/):
   failure_episodes.parquet   target node-episodes, with incident_id
-  mass_incidents.parquet     excluded mass-synchronous incidents
+  mass_incidents.parquet     excluded mass-synchronous incidents (one row per incident)
+  mass_events.parquet        the individual alert lines belonging to mass incidents (node, timestamp, category)
   nontarget_alerts.parquet   APP*/LINK*/… alert lines (hard-negative pool)
   results/failure_set_summary.md
 
@@ -76,8 +77,8 @@ def _cluster_ids(ts: pd.Series, gap_s: float) -> pd.Series:
     return (gaps.isna() | (gaps > gap_s)).cumsum()
 
 
-def split_mass_incidents(ev: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return (node_level_events, mass_incidents_table)."""
+def split_mass_incidents(ev: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Return (node_level_events, mass_incidents_table, mass_events_lines)."""
     ev = ev.sort_values(["alert_tag", "timestamp"]).copy()
     ev["cluster"] = ev.groupby("alert_tag", observed=True)["timestamp"].transform(
         lambda s: _cluster_ids(s, cfg["incident_gap_s"]))
@@ -87,18 +88,19 @@ def split_mass_incidents(ev: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.
               .agg(start=("timestamp", "min"), end=("timestamp", "max"),
                    n_nodes=("node", "nunique"), n_events=("timestamp", "size"))
               .reset_index().rename(columns={"alert_tag": "category"}).drop(columns="cluster"))
-    return ev[~mass_mask].drop(columns="cluster"), mass
+    mass_events = ev[mass_mask][["timestamp", "node", "alert_tag"]].rename(columns={"alert_tag": "category"})
+    return ev[~mass_mask].drop(columns="cluster"), mass, mass_events
 
 
-def build_episodes(df: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_episodes(df: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     alerts = df[df["is_alert"]].copy()
     alerts["timestamp"] = pd.to_datetime(alerts["timestamp"], utc=True)
     tgt = is_target_category(alerts["alert_tag"], cfg)
     nontarget = alerts[~tgt].copy()
     cand = alerts[tgt]
-    node_ev, mass = split_mass_incidents(cand, cfg)
+    node_ev, mass, mass_events = split_mass_incidents(cand, cfg)
     if node_ev.empty:
-        return node_ev.iloc[0:0], mass, nontarget
+        return node_ev.iloc[0:0], mass, nontarget, mass_events
 
     ev = node_ev.sort_values(["node", "timestamp"])
     ev = ev.assign(episode_id=ev.groupby("node", observed=True)["timestamp"]
@@ -119,7 +121,7 @@ def build_episodes(df: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFr
     ep["incident_id"] = (ep["first_category"].astype(str) + "#" +
                          ep.groupby("first_category", observed=True)["start"]
                            .transform(lambda s: _cluster_ids(s, cfg["support_gap_s"])).astype(str))
-    return ep.sort_values("start").reset_index(drop=True), mass, nontarget
+    return ep.sort_values("start").reset_index(drop=True), mass, nontarget, mass_events
 
 
 def summarise(ep: pd.DataFrame, mass: pd.DataFrame, nontarget: pd.DataFrame, cfg: dict, out_md: Path) -> None:
@@ -150,7 +152,7 @@ def summarise(ep: pd.DataFrame, mass: pd.DataFrame, nontarget: pd.DataFrame, cfg
         L.append(mm.to_markdown() + "\n")
     L.append("## Most common category combinations within a target episode\n" +
              ep.categories.value_counts().head(10).to_frame("episodes").to_markdown() + "\n")
-    monthly = ep.set_index("start").resample("1M").agg(episodes=("node", "size"), incidents=("incident_id", "nunique"))
+    monthly = ep.set_index("start").resample("1ME").agg(episodes=("node", "size"), incidents=("incident_id", "nunique"))
     L.append("## Target episodes and incidents per month\n" + monthly.to_markdown() + "\n")
     L.append("## Non-target alert categories (hard-negative pool)\n" +
              nontarget.alert_tag.value_counts().to_frame("lines").to_markdown() + "\n")
@@ -167,9 +169,10 @@ def main() -> None:
     sfx = "_sample" if args.sample else ""
     df = pd.read_parquet(DATA_INTERIM / f"bgl_parsed{sfx}.parquet",
                          columns=["timestamp", "node", "alert_tag", "level", "component", "is_alert"])
-    ep, mass, nontarget = build_episodes(df, cfg)
+    ep, mass, nontarget, mass_events = build_episodes(df, cfg)
     ep.to_parquet(DATA_INTERIM / f"failure_episodes{sfx}.parquet", index=False)
     mass.to_parquet(DATA_INTERIM / f"mass_incidents{sfx}.parquet", index=False)
+    mass_events.to_parquet(DATA_INTERIM / f"mass_events{sfx}.parquet", index=False)
     nontarget.to_parquet(DATA_INTERIM / f"nontarget_alerts{sfx}.parquet", index=False)
     summarise(ep, mass, nontarget, cfg, RESULTS / f"failure_set_summary{sfx}.md")
 
