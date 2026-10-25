@@ -30,5 +30,6 @@ dependencies:
       - pyyaml==6.0.2
       - tqdm==4.66.5
       - tabulate==0.9.0
+      - joblib==1.4.2
       - pytest==8.3.2
       - jupyterlab==4.2.5

@@ -26,3 +26,10 @@ Q1 and Q3 reward documented data decisions.
 - **Negatives sampled uniformly over (unit, time), not at event times.** Alternative: activity-weighted sampling at event times. Rejected after it produced non-empty negatives vs. empty positives, a sampling confound that would be learned instead of failure signal.
 - **Positive windows at five offsets per unit-episode (k = 0,2,4,6,8 min before the gap).** Gives ~5 training examples per rare episode; all metrics are also reported per incident so this cannot inflate results.
 - **Exclusion zones**: failure visible in local window, 20 min after an episode, failure inside the gap, mass-incident lines in window+horizon, span crossing a split cut. Each is counted and reported.
+
+## Phase 3
+- **Primary metric PR-AUC; operating points at FAR 0.1 % and 1 % of negative windows (≈1.4 / 14 alarms per midplane-day); per-incident recall.** Alternative: accuracy or ROC-AUC. Rejected: at ~1.5 % prevalence they flatter; the administrator's cost is false alarms per unit per day.
+- **Decisions use a strict inequality (score > threshold).** Found when a constant model showed recall 1.0 at "1 % FAR"; ties must never fire.
+- **Failure-history features added as a separate group (hours since last unit/system failure, counts over 6 h / 24 h / 7 d, recent mass incidents and non-target alerts).** Alternative: content-only features. Kept both, as an explicit ablation: failures cluster in space and time, and the research question is how much log content adds beyond that clustering. Nothing after the window end t is used.
+- **XGBoost budget: 25 random configurations on the full feature set; the best configuration re-fitted on content-only and history-only.** Keeps the tuning budget equal to the neural family while still answering the ablation question.
+- **Baseline run repeated after the threshold fix and the history features; the superseded log rows (identical seeds/configs, same PR-AUC) were removed to avoid double counting.**

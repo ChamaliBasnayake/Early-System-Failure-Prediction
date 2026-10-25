@@ -16,8 +16,8 @@ scheduling, instead of discovering the failure after it happens.
 |---|---|
 | 0 Environment & repository | done |
 | 1 Data acquisition & EDA | done |
-| 2 Dataset construction & split | in progress |
-| 3 Baselines | — |
+| 2 Dataset construction & split | done |
+| 3 Baselines | in progress |
 | 4 First neural model | — |
 | 5 Optimisation study | — |
 | 6 Generalisation experiments | — |
@@ -52,6 +52,10 @@ python -m src.data.unk_diagnostics        # which messages are unseen after the 
 python -m src.data.precursor_diagnostics  # is there log content before failures, and at which hardware level?
 python -m src.data.window_diagnostics     # content by class and channel
 python -m src.data.templates --transductive-control   # leaky protocol of prior work — CONTROL ONLY (outputs *_tc)
+
+# Phase 3 — baselines (validation only; every configuration appended to experiments/log.csv)
+python -m src.features.build_features   # → data/interim/features.parquet
+python -m src.models.baselines          # trivial, confound LR, 25-config XGBoost search per N → results/baselines_validation.csv
 # same four with --sample to exercise the pipeline on the committed sample
 ```
 
