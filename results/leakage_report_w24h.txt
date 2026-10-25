@@ -1,0 +1,22 @@
+LEAKAGE REPORT (split_v1) — unit=midplane
+============================================================
+[PASS] chronological order: train ≤ 2005-09-30 23:58:00+00:00 < validation [2005-10-01 00:01:00+00:00 … 2005-11-05 23:57:00+00:00] < test ≥ 2005-11-06 00:34:00+00:00
+[PASS] no specific window content shared across splits: 0 specific hashes in >1 split
+[INFO] generic windows (<3 items): 6,442; 145 patterns recur across splits (allowed by design)
+[PASS] no target-failure line of the labelled unit in the last recent-failure-guard interval of a kept window: 0 kept windows affected (guard = 60 min)
+[PASS] global channel contains nothing after window end: searchsorted bound = t; all inter-event gaps ≥ 0
+[PASS] mass-incident windows excluded: 3236 windows marked mass_incident (labels -1)
+[INFO] UNK rate train: local 0.000%, global 0.000%  (templates fitted before 2005-10-01 00:00:00+00:00)
+[INFO] UNK rate validation: local 4.319%, global 2.764%  (templates fitted before 2005-10-01 00:00:00+00:00)
+[INFO] UNK rate test: local 61.297%, global 65.774%  (templates fitted before 2005-10-01 00:00:00+00:00)
+[INFO] exclusion reasons: none=71047, mass_incident=3236, crosses_split_cut=648, recent_failure=359
+[INFO] label_1: -1=4243, 0=70282, 1=765
+[INFO] label_5: -1=4559, 0=69974, 1=757
+[INFO] label_15: -1=5316, 0=69102, 1=872
+[INFO] label_30: -1=6196, 0=68036, 1=1058
+[INFO] train local-channel non-empty: positives 81.1%, negatives 61.8%
+[INFO] validation local-channel non-empty: positives 82.6%, negatives 85.1%
+[INFO] test local-channel non-empty: positives 83.2%, negatives 77.3%
+[PASS] model inputs exclude identifiers/labels: 15 input columns
+============================================================
+RESULT: ALL CHECKS PASSED

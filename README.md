@@ -56,6 +56,18 @@ python -m src.data.templates --transductive-control   # leaky protocol of prior 
 # Phase 3 — baselines (validation only; every configuration appended to experiments/log.csv)
 python -m src.features.build_features   # → data/interim/features.parquet
 python -m src.models.baselines          # trivial, confound LR, 25-config XGBoost search per N → results/baselines_validation.csv
+
+# Phase 3b — where does predictability live? SYSTEM-level variant (label: any target failure in the horizon)
+python -m src.data.windows --unit system --tag system && python -m src.features.build_features --tag system --unit system
+python -m src.models.baselines --tag system --n_configs 10
+python -m src.models.feature_importance   # what the content model uses (template text, direction, group shares)
+# Phase 3c — local window length study (the lecturer-approved 4th hyperparameter): W_local = 1 h (primary), 6 h, 24 h
+python -m src.data.windows --local-window 360  --tag w6h  && python -m src.features.build_features --tag w6h  && python -m src.models.baselines --tag w6h  --n_configs 10
+python -m src.data.windows --local-window 1440 --tag w24h && python -m src.features.build_features --tag w24h && python -m src.models.baselines --tag w24h --n_configs 10
+# Protocol controls (Phase 6; comparison only, never for model selection)
+python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
+python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
+python -m src.models.baselines --tag tc --n_configs 10                            # leaky transductive templates
 # same four with --sample to exercise the pipeline on the committed sample
 ```
 

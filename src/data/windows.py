@@ -22,7 +22,8 @@ removed within a split and (for ≥3-item local content) across splits. Positive
 incident_id / category for per-incident metrics.
 
 Outputs: data/interim/windows.parquet, results/windows_summary.md, results/class_distribution.csv
-Usage:   python -m src.data.windows [--sample] [--split split_v1]
+Usage:   python -m src.data.windows [--sample] [--split split_v1] [--unit system --tag system] [--events _tc --tag tc]
+         python -m src.data.windows --local-window 360 --tag w6h      (window-length study)
 """
 from __future__ import annotations
 
@@ -47,7 +48,7 @@ MIN = 60 * SEC
 @dataclass
 class Cfg:
     level: str; Wl: int; Wg: int; max_local: int; max_global: int; Ns: list; H: int; offsets: list
-    ep_gap_s: int; post_excl: int; uniform_negatives: dict; hard_negatives: dict; seed: int
+    ep_gap_s: int; post_excl: int; uniform_negatives: dict; hard_negatives: dict; seed: int; recent_excl: int = 60
 
     @classmethod
     def load(cls) -> "Cfg":
@@ -56,7 +57,7 @@ class Cfg:
                    max_local=y["max_events_local"], max_global=y["max_events_global"], Ns=list(y["lead_times_min"]),
                    H=y["horizon_minutes"], offsets=list(y["positive_offsets_min"]), ep_gap_s=y["unit_episode_gap_s"],
                    post_excl=y["post_episode_exclusion_min"], uniform_negatives=y["uniform_negatives"],
-                   hard_negatives=y["hard_negatives"], seed=y["seed"])
+                   hard_negatives=y["hard_negatives"], seed=y["seed"], recent_excl=y.get("recent_failure_exclusion_min", 60))
 
 
 def _ns(ts) -> np.ndarray:
@@ -111,6 +112,7 @@ def make_candidates(ue: pd.DataFrame, all_units: np.ndarray, nontarget: pd.DataF
 # ----------------------------------------------------------------------------- labels
 def label_windows(cand: pd.DataFrame, ue: pd.DataFrame, mass_events: pd.DataFrame, split: dict, cfg: Cfg) -> pd.DataFrame:
     W, H, PE = cfg.Wl * MIN, cfg.H * MIN, cfg.post_excl * MIN
+    R = min(cfg.recent_excl, cfg.Wl) * MIN          # recent-failure guard (never longer than the local window)
     maxN = max(cfg.Ns) * MIN
     cand = cand.copy()
     ep_by_unit = {u: (g["start_ns"].values, g["end_ns"].values) for u, g in ue.groupby("unit")}
@@ -128,7 +130,7 @@ def label_windows(cand: pd.DataFrame, ue: pd.DataFrame, mass_events: pd.DataFram
             if j < len(me) and me[j] <= t + maxN + H: excl = "mass_incident"
         starts, ends = ep_by_unit.get(u, (np.array([], dtype=np.int64), np.array([], dtype=np.int64)))
         if not excl and len(starts):
-            if np.any((starts <= t) & (ends >= t - W)): excl = "episode_in_window"
+            if np.any((starts <= t) & (ends >= t - R)): excl = "recent_failure"      # failure within the last R min
             elif np.any((ends < t) & (ends >= t - PE)): excl = "post_episode"
         if not excl and np.any((cuts > t - W) & (cuts <= t + maxN + H)): excl = "crosses_split_cut"
         reason[i] = excl
@@ -247,10 +249,18 @@ def summarise(win: pd.DataFrame, ue: pd.DataFrame, cfg: Cfg, ded: dict, out_md, 
 
 def main() -> None:
     ap = argparse.ArgumentParser(); ap.add_argument("--sample", action="store_true"); ap.add_argument("--split", default="split_v1")
-    args = ap.parse_args(); sfx = "_sample" if args.sample else ""
+    ap.add_argument("--unit", default=None, help="override unit_level from configs/windows.yaml (e.g. system)")
+    ap.add_argument("--events", default="", help="events file suffix, e.g. _tc for the transductive-control templates")
+    ap.add_argument("--tag", default="", help="output tag, e.g. system or tc; outputs become windows_<tag>.parquet etc.")
+    ap.add_argument("--local-window", type=int, default=None, help="override local_window_min (W study: 60, 360, 1440)")
+    ap.add_argument("--global-window", type=int, default=None, help="override global_window_min")
+    args = ap.parse_args(); sfx = "_sample" if args.sample else ""; out_sfx = sfx + (f"_{args.tag}" if args.tag else "")
     cfg = Cfg.load(); set_seed(cfg.seed); rng = np.random.default_rng(cfg.seed)
+    if args.unit: cfg.level = args.unit
+    if args.local_window: cfg.Wl = args.local_window
+    if args.global_window: cfg.Wg = args.global_window
     split = load_split(DATA_SPLITS / f"{args.split}{sfx}.json")
-    events = pd.read_parquet(DATA_INTERIM / f"events{sfx}.parquet")
+    events = pd.read_parquet(DATA_INTERIM / f"events{sfx}{args.events}.parquet")
     ep = pd.read_parquet(DATA_INTERIM / f"failure_episodes{sfx}.parquet")
     mass_events = pd.read_parquet(DATA_INTERIM / f"mass_events{sfx}.parquet")
     nontarget = pd.read_parquet(DATA_INTERIM / f"nontarget_alerts{sfx}.parquet")
@@ -266,9 +276,9 @@ def main() -> None:
     cand = label_windows(cand, ue, mass_events, split, cfg)
     win = extract_content(cand, events, nontarget_mask, target_mask, cfg)
     win, ded = dedup(win)
-    win.to_parquet(DATA_INTERIM / f"windows{sfx}.parquet", index=False)
-    ue.to_parquet(DATA_INTERIM / f"unit_episodes{sfx}.parquet", index=False)
-    summarise(win, ue, cfg, ded, RESULTS / f"windows_summary{sfx}.md", RESULTS / f"class_distribution{sfx}.csv")
+    win.to_parquet(DATA_INTERIM / f"windows{out_sfx}.parquet", index=False)
+    ue.to_parquet(DATA_INTERIM / f"unit_episodes{out_sfx}.parquet", index=False)
+    summarise(win, ue, cfg, ded, RESULTS / f"windows_summary{out_sfx}.md", RESULTS / f"class_distribution{out_sfx}.csv")
 
 
 if __name__ == "__main__":

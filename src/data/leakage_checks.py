@@ -3,7 +3,8 @@
 Asserts and reports:
  (a) chronological order of window ends across splits;
  (b) no specific content (≥3 items) shared across splits; generic patterns reported;
- (c) no TARGET failure line of the labelled unit inside its LOCAL window (the failure must never be visible);
+ (c) no TARGET failure line of the labelled unit within the recent-failure guard before the window end
+     (older failures inside a long local window are legitimate history);
  (d) no GLOBAL-channel item later than the window end (nothing from the future);
  (e) mass-incident exclusions applied;
  (f) UNK rate per split and channel; exclusion counts; label counts;
@@ -31,8 +32,12 @@ FORBIDDEN_IN_INPUT = {"node", "unit", "alert_tag", "level", "category", "inciden
 
 def main() -> None:
     ap = argparse.ArgumentParser(); ap.add_argument("--sample", action="store_true"); ap.add_argument("--split", default="split_v1")
-    args = ap.parse_args(); sfx = "_sample" if args.sample else ""
-    cfg = Cfg.load(); win = pd.read_parquet(DATA_INTERIM / f"windows{sfx}.parquet"); ev = pd.read_parquet(DATA_INTERIM / f"events{sfx}.parquet")
+    ap.add_argument("--tag", default=""); ap.add_argument("--local-window", type=int, default=None); ap.add_argument("--unit", default=None)
+    args = ap.parse_args(); sfx = "_sample" if args.sample else ""; wsfx = sfx + (f"_{args.tag}" if args.tag else "")
+    cfg = Cfg.load()
+    if args.local_window: cfg.Wl = args.local_window
+    if args.unit: cfg.level = args.unit
+    win = pd.read_parquet(DATA_INTERIM / f"windows{wsfx}.parquet"); ev = pd.read_parquet(DATA_INTERIM / f"events{sfx}.parquet")
     split = load_split(DATA_SPLITS / f"{args.split}{sfx}.json")
     L, failures = [f"LEAKAGE REPORT ({args.split}{sfx}) — unit={cfg.level}", "=" * 60], []
 
@@ -60,14 +65,15 @@ def main() -> None:
     tgt, tt = tgt[keep], tt[keep]
     tunit = unit_of(tgt["node"], cfg.level).values
     tg = {u: np.sort(tt[tunit == u]) for u in np.unique(tunit)}
-    ws = win["window_start"].values.astype("datetime64[ns]").astype(np.int64); we = win["window_end"].values.astype("datetime64[ns]").astype(np.int64)
+    R = np.int64(min(cfg.recent_excl, cfg.Wl)) * 60 * 1_000_000_000
+    we = win["window_end"].values.astype("datetime64[ns]").astype(np.int64); ws = we - R          # the guarded interval [t-R, t]
     kept = win[[c for c in win.columns if c.startswith("label_")]].max(axis=1).values >= 0
     bad = 0
     for u, a, b, k in zip(win["unit"].values, ws, we, kept):
         if not k or u not in tg: continue
         arr = tg[u]; j = np.searchsorted(arr, a)
         if j < len(arr) and arr[j] <= b: bad += 1
-    check("no target-failure line of the labelled unit inside its kept local window", bad == 0, f"{bad} kept windows affected")
+    check("no target-failure line of the labelled unit in the last recent-failure-guard interval of a kept window", bad == 0, f"{bad} kept windows affected (guard = {min(cfg.recent_excl, cfg.Wl)} min)")
 
     # (d) global channel never looks into the future: dt_global are non-negative and content ends at window_end by construction
     check("global channel contains nothing after window end", bool(win["dt_global"].map(lambda d: all(x >= 0 for x in d)).all()), "searchsorted bound = t; all inter-event gaps ≥ 0")
@@ -83,7 +89,7 @@ def main() -> None:
         L.append(f"[INFO] {k} local-channel non-empty: positives {(g.loc[g.label_5 == 1, 'n_local'] > 0).mean():.1%}, negatives {(g.loc[g.label_5 == 0, 'n_local'] > 0).mean():.1%}")
     check("model inputs exclude identifiers/labels", not (FORBIDDEN_IN_INPUT & set(MODEL_INPUT_COLUMNS)), f"{len(MODEL_INPUT_COLUMNS)} input columns")
     L.append("=" * 60); L.append("RESULT: " + ("ALL CHECKS PASSED" if not failures else f"FAILED: {failures}"))
-    txt = "\n".join(L); (RESULTS / f"leakage_report{sfx}.txt").write_text(txt, encoding="utf-8"); print(txt)
+    txt = "\n".join(L); (RESULTS / f"leakage_report{wsfx}.txt").write_text(txt, encoding="utf-8"); print(txt)
     sys.exit(1 if failures else 0)
 
 

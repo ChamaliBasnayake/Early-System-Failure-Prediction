@@ -1,0 +1,27 @@
+{
+  "xgboost": {
+    "1": {
+      "0.001": 0.13578909635543823,
+      "0.01": 0.05411079153418541
+    },
+    "5": {
+      "0.001": 0.1394132375717163,
+      "0.01": 0.05821710452437401
+    },
+    "15": {
+      "0.001": 0.8668653964996338,
+      "0.01": 0.7000989317893982
+    },
+    "30": {
+      "0.001": 0.2696306109428406,
+      "0.01": 0.07666339725255966
+    }
+  },
+  "best_configs": {
+    "1": "max_depth=3;learning_rate=0.03;n_estimators=200;subsample=1.0;colsample_bytree=1.0;min_child_weight=1;scale_pos_weight=1",
+    "5": "max_depth=3;learning_rate=0.03;n_estimators=500;subsample=0.7;colsample_bytree=0.5;min_child_weight=1;scale_pos_weight=1",
+    "15": "max_depth=3;learning_rate=0.03;n_estimators=200;subsample=1.0;colsample_bytree=0.5;min_child_weight=5;scale_pos_weight=ratio",
+    "30": "max_depth=3;learning_rate=0.1;n_estimators=200;subsample=0.7;colsample_bytree=0.5;min_child_weight=1;scale_pos_weight=1"
+  },
+  "note": "chosen on validation; frozen for Phase 7"
+}

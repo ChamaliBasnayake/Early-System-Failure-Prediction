@@ -10,7 +10,7 @@
                clustering of failures in space and time (Q3 error analysis / Q2.b expectation).
 For each lead time N the best model is saved to results/models/, metrics to results/baselines_validation.csv,
 and thresholds at the FAR levels are frozen in results/thresholds_baselines.json for Phase 7.
-Usage: python -m src.models.baselines [--sample] [--n_configs 25] [--N 5]  (default: all N)
+Usage: python -m src.models.baselines [--sample] [--n_configs 25] [--N 5] [--tag system] [--tag tc] [--random-split-control]
 """
 from __future__ import annotations
 
@@ -45,14 +45,25 @@ def sample_configs(n: int, rng: np.random.Generator) -> list[dict]:
     return out
 
 
-def load(sfx: str):
+def load(sfx: str, random_split_seed: int | None = None):
     f = pd.read_parquet(DATA_INTERIM / f"features{sfx}.parquet"); groups = json.loads((DATA_INTERIM / f"feature_groups{sfx}.json").read_text())
+    if random_split_seed is not None:
+        # PROTOCOL CONTROL ONLY: re-assign windows to train/validation/test at random (the leaky protocol of most
+        # prior work), keeping the same split sizes. Never used for any model decision.
+        rng = np.random.default_rng(random_split_seed); sizes = f["split"].value_counts()
+        perm = rng.permutation(len(f)); lab = np.empty(len(f), dtype=object); i = 0
+        for k in ("train", "validation", "test"):
+            lab[perm[i:i + sizes[k]]] = k; i += sizes[k]
+        f = f.assign(split=lab)
     return f, groups
 
 
 def split_xy(f: pd.DataFrame, cols: list[str], N: int, split: str):
     g = f[(f.split == split) & (f[f"label_{N}"] >= 0)]
     return g[cols].values.astype(np.float32), g[f"label_{N}"].values.astype(int), g["incident_id"].values, g
+
+
+OUTCOME = "success"
 
 
 def run_one(name: str, model, Xtr, ytr, Xva, yva, inc_va, N: int, cfg_desc: str, seed: int, phase: int = 3) -> tuple[dict, float, float]:
@@ -62,7 +73,7 @@ def run_one(name: str, model, Xtr, ytr, Xva, yva, inc_va, N: int, cfg_desc: str,
     log_run(phase=phase, model_family=name, purpose=f"baseline {name}, N={N}", changed_vs_previous=cfg_desc, config_path="src/models/baselines.py",
             key_hyperparams=f"N={N};{cfg_desc}", seed=seed, split="validation", val_pr_auc=round(res["pr_auc"], 4),
             val_recall_at_far=round(res["recall@far0.01"], 4), val_f1=round(res["f1@far0.01"], 4), train_time_s=round(train_s, 1),
-            infer_ms_per_window=round(infer_ms, 4), outcome="success",
+            infer_ms_per_window=round(infer_ms, 4), outcome=OUTCOME,
             learned=f"auto: val PR-AUC {res['pr_auc']:.4f}, recall@1%FAR {res['recall@far0.01']:.3f}, incident recall {res.get('incident_recall@far0.01', float('nan')):.3f}")
     return res, train_s, infer_ms
 
@@ -70,8 +81,16 @@ def run_one(name: str, model, Xtr, ytr, Xva, yva, inc_va, N: int, cfg_desc: str,
 def main() -> None:
     ap = argparse.ArgumentParser(); ap.add_argument("--sample", action="store_true"); ap.add_argument("--n_configs", type=int, default=25)
     ap.add_argument("--N", type=int, nargs="*", default=None); ap.add_argument("--seed", type=int, default=11)
+    ap.add_argument("--tag", default="", help="features tag (system, tc, …); results are written with the same tag")
+    ap.add_argument("--random-split-control", action="store_true", help="PROTOCOL CONTROL: random window split instead of chronological")
     args = ap.parse_args(); sfx = "_sample" if args.sample else ""; set_seed(args.seed); rng = np.random.default_rng(args.seed)
-    f, groups = load(sfx); Ns = args.N or yaml.safe_load((CONFIGS / "windows.yaml").read_text())["lead_times_min"]
+    in_sfx = sfx + (f"_{args.tag}" if args.tag else "")
+    f, groups = load(in_sfx, random_split_seed=args.seed if args.random_split_control else None)
+    sfx = in_sfx + ("_randomsplit" if args.random_split_control else "")       # output suffix
+    global OUTCOME
+    if args.random_split_control or args.tag == "tc":
+        OUTCOME = "control"; print(f"[baselines] *** PROTOCOL CONTROL ({'random split' if args.random_split_control else 'transductive templates'}) — comparison only ***")
+    Ns = args.N or yaml.safe_load((CONFIGS / "windows.yaml").read_text())["lead_times_min"]
     rows, thresholds, best_cfgs = [], {}, {}
     (RESULTS / "models").mkdir(exist_ok=True)
     for N in Ns:

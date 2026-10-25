@@ -73,7 +73,7 @@ def test_exclusions():
     extra = pd.DataFrame({"unit": ["R01-M0", "R01-M0", "R02-M1"], "t_ns": [int((S + pd.Timedelta(minutes=3)).value), int((S + pd.Timedelta(minutes=12)).value), int((MT - pd.Timedelta(minutes=5)).value)],
                           "anchor": "uniform", "unit_episode_id": -1, "incident_id": "", "category": ""})
     lab = label_windows(extra, ue, mass, SPLIT, CFG)
-    assert lab.exclusion.tolist() == ["episode_in_window", "post_episode", "mass_incident"]
+    assert lab.exclusion.tolist() == ["recent_failure", "post_episode", "mass_incident"]
 
 
 def test_dedup():

@@ -26,7 +26,7 @@ Dedup: 87,800 → 76,977 windows (cross-split 461, within-split 10,362).
 |:------------------|----------:|
 | none              |     75931 |
 | mass_incident     |       651 |
-| episode_in_window |       370 |
+| recent_failure    |       370 |
 | crosses_split_cut |        25 |
 
 ## Anchors per split

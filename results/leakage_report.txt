@@ -3,13 +3,13 @@ LEAKAGE REPORT (split_v1) — unit=midplane
 [PASS] chronological order: train ≤ 2005-09-30 23:58:00+00:00 < validation [2005-10-01 00:01:00+00:00 … 2005-11-05 23:55:00+00:00] < test ≥ 2005-11-06 00:34:00+00:00
 [PASS] no specific window content shared across splits: 0 specific hashes in >1 split
 [INFO] generic windows (<3 items): 8,846; 132 patterns recur across splits (allowed by design)
-[PASS] no target-failure line of the labelled unit inside its kept local window: 0 kept windows affected
+[PASS] no target-failure line of the labelled unit in the last recent-failure-guard interval of a kept window: 0 kept windows affected (guard = 60 min)
 [PASS] global channel contains nothing after window end: searchsorted bound = t; all inter-event gaps ≥ 0
 [PASS] mass-incident windows excluded: 651 windows marked mass_incident (labels -1)
 [INFO] UNK rate train: local 0.000%, global 0.000%  (templates fitted before 2005-10-01 00:00:00+00:00)
 [INFO] UNK rate validation: local 16.463%, global 2.745%  (templates fitted before 2005-10-01 00:00:00+00:00)
 [INFO] UNK rate test: local 68.226%, global 65.804%  (templates fitted before 2005-10-01 00:00:00+00:00)
-[INFO] exclusion reasons: none=75931, mass_incident=651, episode_in_window=370, crosses_split_cut=25
+[INFO] exclusion reasons: none=75931, mass_incident=651, recent_failure=370, crosses_split_cut=25
 [INFO] label_1: -1=1046, 0=74830, 1=1101
 [INFO] label_5: -1=1494, 0=74340, 1=1143
 [INFO] label_15: -1=2637, 0=73030, 1=1310

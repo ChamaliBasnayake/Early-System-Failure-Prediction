@@ -104,19 +104,22 @@ def build(win: pd.DataFrame, vocab: int, history: dict | None = None) -> tuple[p
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(); ap.add_argument("--sample", action="store_true"); args = ap.parse_args(); sfx = "_sample" if args.sample else ""
+    ap = argparse.ArgumentParser(); ap.add_argument("--sample", action="store_true")
+    ap.add_argument("--tag", default="", help="windows tag (e.g. system, tc); reads windows_<tag>, writes features_<tag>")
+    ap.add_argument("--unit", default=None); ap.add_argument("--templates", default="", help="templates csv suffix, e.g. _tc")
+    args = ap.parse_args(); sfx = "_sample" if args.sample else ""; tsfx = sfx + (f"_{args.tag}" if args.tag else "")
     import yaml
     from src.utils.paths import CONFIGS
-    level = yaml.safe_load((CONFIGS / "windows.yaml").read_text())["unit_level"]
-    win = pd.read_parquet(DATA_INTERIM / f"windows{sfx}.parquet")
-    templates = pd.read_csv(DATA_INTERIM / f"templates{sfx}.csv"); vocab = int(templates["template_index"].max()) + 1
-    ue = pd.read_parquet(DATA_INTERIM / f"unit_episodes{sfx}.parquet"); mass = pd.read_parquet(DATA_INTERIM / f"mass_incidents{sfx}.parquet")
+    level = args.unit or yaml.safe_load((CONFIGS / "windows.yaml").read_text())["unit_level"]
+    win = pd.read_parquet(DATA_INTERIM / f"windows{tsfx}.parquet")
+    templates = pd.read_csv(DATA_INTERIM / f"templates{sfx}{args.templates}.csv"); vocab = int(templates["template_index"].max()) + 1
+    ue = pd.read_parquet(DATA_INTERIM / f"unit_episodes{tsfx}.parquet"); mass = pd.read_parquet(DATA_INTERIM / f"mass_incidents{sfx}.parquet")
     nontarget = pd.read_parquet(DATA_INTERIM / f"nontarget_alerts{sfx}.parquet")
     hist = history_features(win, ue, mass, nontarget, level)
     f, groups = build(win, vocab, hist)
-    f.to_parquet(DATA_INTERIM / f"features{sfx}.parquet", index=False)
-    (DATA_INTERIM / f"feature_groups{sfx}.json").write_text(json.dumps(groups))
-    print(f"[features] {f.shape[0]:,} windows × {len(groups['full'])} features (vocab {vocab}) → features{sfx}.parquet")
+    f.to_parquet(DATA_INTERIM / f"features{tsfx}.parquet", index=False)
+    (DATA_INTERIM / f"feature_groups{tsfx}.json").write_text(json.dumps(groups))
+    print(f"[features] {f.shape[0]:,} windows × {len(groups['full'])} features (vocab {vocab}) → features{tsfx}.parquet")
 
 
 if __name__ == "__main__":

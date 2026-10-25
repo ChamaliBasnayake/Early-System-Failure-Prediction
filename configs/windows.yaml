@@ -13,6 +13,8 @@ lead_times_min: [1, 5, 15, 30]  # gap N: a target failure on the unit must start
 horizon_minutes: 10             # H
 positive_offsets_min: [0, 2, 4, 6, 8]    # extra positive window ends per unit-episode: t = start - N - k
 unit_episode_gap_s: 300         # target episodes on the same unit within this gap = one unit-episode
+recent_failure_exclusion_min: 60 # a target episode on the unit within the last 60 min excludes the window (ongoing-storm guard);
+                                 # OLDER failures inside a long local window are legitimate history and stay in the channel
 post_episode_exclusion_min: 20  # windows ending within this after a unit-episode end are excluded
 uniform_negatives: {train: 40000, validation: 15000, test: 15000}   # (unit, time) pairs drawn uniformly over the split period
 hard_negatives:    {train: 4000,  validation: 2000,  test: 2000}    # window ends 30 s after a NON-target alert on the unit
