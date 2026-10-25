@@ -1,0 +1,26 @@
+# Phase 4 — first neural model. Two-channel sequence encoder (unit-local + system-global), shared template
+# embedding, LSTM per channel, masked last hidden state, small scalar context vector, sigmoid output.
+name: lstm_v1
+model:
+  type: lstm                 # lstm | cnn (Phase 5) | lstm_semantic (Phase 5)
+  embed_dim: 32              # template embedding
+  hidden: 64                 # LSTM hidden size per channel
+  layers: 1
+  dropout: 0.3               # on the fused representation (also used for MC-dropout uncertainty at inference)
+  layernorm: true            # LayerNorm on the per-step input [embedding, log1p(count), log1p(dt)]
+  pooling: last              # last | meanmax
+  scalar_groups: [time, volume]   # scalar context features taken from features.parquet (no counts, no history)
+train:
+  N: 5
+  seed: 11
+  batch_size: 128
+  epochs: 30
+  patience: 5                # early stopping on validation PR-AUC
+  optimizer: adam            # adam | sgd | adamw
+  lr: 0.001
+  weight_decay: 0.0
+  momentum: 0.9              # sgd only
+  pos_weight: sqrt           # sqrt | ratio | 1   (sqrt(n_neg/n_pos) tempers over-firing at 1.5 % prevalence)
+  max_local: 256
+  max_global: 256
+  num_workers: 0

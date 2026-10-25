@@ -17,8 +17,8 @@ scheduling, instead of discovering the failure after it happens.
 | 0 Environment & repository | done |
 | 1 Data acquisition & EDA | done |
 | 2 Dataset construction & split | done |
-| 3 Baselines | in progress |
-| 4 First neural model | — |
+| 3 Baselines | done |
+| 4 First neural model | done |
 | 5 Optimisation study | — |
 | 6 Generalisation experiments | — |
 | 7 Final evaluation (test, once) | — |
@@ -64,6 +64,11 @@ python -m src.models.feature_importance   # what the content model uses (templat
 # Phase 3c — local window length study (the lecturer-approved 4th hyperparameter): W_local = 1 h (primary), 6 h, 24 h
 python -m src.data.windows --local-window 360  --tag w6h  && python -m src.features.build_features --tag w6h  && python -m src.models.baselines --tag w6h  --n_configs 10
 python -m src.data.windows --local-window 1440 --tag w24h && python -m src.features.build_features --tag w24h && python -m src.models.baselines --tag w24h --n_configs 10
+# Phase 4 — first neural model (two-channel LSTM), three seeds, learning curves
+python -m src.models.train --config configs/lstm_v1.yaml --seed 11
+python -m src.models.train --config configs/lstm_v1.yaml --seed 22
+python -m src.models.train --config configs/lstm_v1.yaml --seed 33
+python -m src.models.plot_curves --runs lstm_v1_N5_s11 lstm_v1_N5_s22 lstm_v1_N5_s33 --out lstm_v1_N5
 # Protocol controls (Phase 6; comparison only, never for model selection)
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
