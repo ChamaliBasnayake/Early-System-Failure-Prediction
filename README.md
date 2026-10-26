@@ -19,11 +19,11 @@ scheduling, instead of discovering the failure after it happens.
 | 2 Dataset construction & split | done |
 | 3 Baselines | done |
 | 4 First neural model | done |
-| 5 Optimisation study | — |
+| 5 Optimisation study | in progress |
 | 6 Generalisation experiments | — |
 | 7 Final evaluation (test, once) | — |
 | 8 Explainable AI | — |
-| 9 Web application | — |
+| 9 Web application | in progress |
 | 10 Generative AI comparison | — |
 | 11 Report, video, presentation | — |
 
@@ -69,6 +69,15 @@ python -m src.models.train --config configs/lstm_v1.yaml --seed 11
 python -m src.models.train --config configs/lstm_v1.yaml --seed 22
 python -m src.models.train --config configs/lstm_v1.yaml --seed 33
 python -m src.models.plot_curves --runs lstm_v1_N5_s11 lstm_v1_N5_s22 lstm_v1_N5_s33 --out lstm_v1_N5
+# Phase 5 — optimisation study (overnight batch; ~24 runs; validation only) + variants
+python -m src.models.embed_messages                       # frozen MiniLM embeddings for every masked text (semantic variant)
+powershell -ExecutionPolicy Bypass -File scripts\phase5_study.ps1
+python -m src.models.study_summary                        # → results/optimisation_study.md + results/figures/study_*.png
+# Phase 9 — web application (development mode: SQLite; production: docker compose with PostgreSQL)
+uvicorn app.backend.main:app --reload --port 8000        # backend, from the project root (loads Drain state + checkpoint once)
+cd app/frontend && npm install && npm run dev            # frontend at http://localhost:5173 (proxies /api to :8000)
+pytest -q tests/test_phase9.py                           # API tests (normal, invalid, empty, unknown midplane, feedback, history)
+docker compose up --build                                # full stack: Postgres + backend (:8000) + nginx frontend (:8080)
 # Protocol controls (Phase 6; comparison only, never for model selection)
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc

@@ -3,8 +3,9 @@
 Saves: results/checkpoints/<name>_N<N>_s<seed>.pt, results/curves/<run_id>.json (per-epoch train loss,
 validation loss, validation PR-AUC), results/scores/<name>_N<N>_s<seed>_validation.parquet (per-window
 scores for error analysis / XAI), and one experiment-log row with what was changed and what was learned.
-Usage: python -m src.models.train --config configs/lstm_v1.yaml [--seed 22] [--N 5] [--tag w24h]
+Usage: python -m src.models.train --config configs/lstm_v1.yaml [--seed 22] [--N 5] [--tag w24h] [--name lr_3e-4]
        [--set train.lr=0.0003 --set model.hidden=128]   (override any config key; recorded in the log)
+       [--purpose "..."] [--changed "..."] [--phase 5]
 """
 from __future__ import annotations
 
@@ -34,7 +35,7 @@ def build_model(cfg: dict, vocab: int, n_scalars: int) -> nn.Module:
         return TwoChannelLSTM(vocab, n_scalars, m["embed_dim"], m["hidden"], m["layers"], m["dropout"], m["layernorm"], m["pooling"])
     if m["type"] == "cnn":
         from src.models.cnn import TwoChannelCNN
-        return TwoChannelCNN(vocab, n_scalars, m["embed_dim"], m.get("filters", 64), m.get("kernels", [3, 5, 7]), m["dropout"], m["layernorm"])
+        return TwoChannelCNN(vocab, n_scalars, m["embed_dim"], m.get("filters", 64), tuple(m.get("kernels", [3, 5, 7])), m["dropout"], m["layernorm"])
     if m["type"] == "lstm_semantic":
         from src.models.semantic import TwoChannelSemanticLSTM
         return TwoChannelSemanticLSTM(vocab, n_scalars, m["hidden"], m["layers"], m["dropout"], m["layernorm"], m["pooling"], m.get("proj_dim", 64), m["embedding_file"])
@@ -72,8 +73,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(); ap.add_argument("--config", required=True); ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--N", type=int, default=None); ap.add_argument("--tag", default=""); ap.add_argument("--sample", action="store_true")
     ap.add_argument("--set", action="append", default=[]); ap.add_argument("--purpose", default=""); ap.add_argument("--changed", default="")
-    ap.add_argument("--phase", type=int, default=4); args = ap.parse_args()
+    ap.add_argument("--phase", type=int, default=4); ap.add_argument("--name", default=None, help="run name override (default: config name)")
+    args = ap.parse_args()
     cfg = apply_overrides(yaml.safe_load(Path(args.config).read_text()), args.set)
+    if args.name: cfg["name"] = args.name
     if args.seed is not None: cfg["train"]["seed"] = args.seed
     if args.N is not None: cfg["train"]["N"] = args.N
     t = cfg["train"]; N, seed = t["N"], t["seed"]; set_seed(seed); torch.set_num_threads(max(1, torch.get_num_threads()))
@@ -110,7 +113,7 @@ def main() -> None:
     torch.save({"state_dict": best_state, "config": cfg, "vocab": vocab, "n_scalars": tr_X.shape[1], "scalar_cols": cols, "scaler": tr_ds.scaler, "n_params": n_params}, RESULTS / "checkpoints" / f"{run_id}.pt")
     (RESULTS / "curves" / f"{run_id}.json").write_text(json.dumps({"run_id": run_id, "config": cfg, "curves": curves, "best": {k: v for k, v in best_res.items() if not isinstance(v, dict)}}, indent=1))
     pd.DataFrame({"unit": va_df["unit"], "t_ns": va_df["t_ns"], "label": vy, "score": best_scores, "incident_id": va_df["incident_id"], "anchor": va_df["anchor"]}).to_parquet(RESULTS / "scores" / f"{run_id}_validation.parquet", index=False)
-    hp = f"N={N};type={cfg['model']['type']};emb={cfg['model']['embed_dim']};hidden={cfg['model']['hidden']};layers={cfg['model']['layers']};drop={cfg['model']['dropout']};pool={cfg['model']['pooling']};opt={t['optimizer']};lr={t['lr']};bs={t['batch_size']};wd={t['weight_decay']};posw={t['pos_weight']};Wl={t['max_local']}"
+    hp = f"N={N};type={cfg['model']['type']};emb={cfg['model']['embed_dim']};hidden={cfg['model']['hidden']};layers={cfg['model']['layers']};drop={cfg['model']['dropout']};pool={cfg['model']['pooling']};opt={t['optimizer']};lr={t['lr']};bs={t['batch_size']};wd={t['weight_decay']};mom={t['momentum']};posw={t['pos_weight']};tag={args.tag or 'primary'}"
     best_ep = max(curves, key=lambda c: c["val_pr_auc"])["epoch"]
     log_run(run_id=run_id, phase=args.phase, model_family=cfg["model"]["type"], purpose=args.purpose or f"{name} N={N}", changed_vs_previous=args.changed or ("; ".join(args.set) if args.set else "config as file"),
             config_path=args.config, key_hyperparams=hp, seed=seed, split="validation", val_pr_auc=round(best_res["pr_auc"], 4),

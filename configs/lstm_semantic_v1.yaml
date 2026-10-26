@@ -1,0 +1,14 @@
+# Phase 5 — transfer-learning variant: frozen MiniLM sentence embeddings of message text, projected to 64-d, same LSTM as v1.
+name: sem_v1
+model:
+  type: lstm_semantic
+  embed_dim: 384       # frozen pretrained (informational)
+  proj_dim: 64
+  embedding_file: data/interim/masked_embeddings_minilm.npy
+  hidden: 64
+  layers: 1
+  dropout: 0.3
+  layernorm: true
+  pooling: last
+  scalar_groups: [time, volume]
+train: {N: 5, seed: 11, batch_size: 128, epochs: 30, patience: 5, optimizer: adam, lr: 0.001, weight_decay: 0.0, momentum: 0.9, pos_weight: sqrt, max_local: 256, max_global: 256, num_workers: 0}

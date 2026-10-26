@@ -1,0 +1,99 @@
+{
+ "run_id": "lr_3e-4_N5_s11",
+ "config": {
+  "name": "lr_3e-4",
+  "model": {
+   "type": "lstm",
+   "embed_dim": 32,
+   "hidden": 64,
+   "layers": 1,
+   "dropout": 0.3,
+   "layernorm": true,
+   "pooling": "last",
+   "scalar_groups": [
+    "time",
+    "volume"
+   ]
+  },
+  "train": {
+   "N": 5,
+   "seed": 11,
+   "batch_size": 128,
+   "epochs": 30,
+   "patience": 5,
+   "optimizer": "adam",
+   "lr": 0.0003,
+   "weight_decay": 0.0,
+   "momentum": 0.9,
+   "pos_weight": "sqrt",
+   "max_local": 256,
+   "max_global": 256,
+   "num_workers": 0
+  }
+ },
+ "curves": [
+  {
+   "epoch": 1,
+   "train_loss": 0.4854669400802697,
+   "val_loss": 0.3590216719391619,
+   "val_pr_auc": 0.02011275416558918,
+   "val_roc_auc": 0.5573136912257229
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.3725727054545166,
+   "val_loss": 0.3330921268028329,
+   "val_pr_auc": 0.01547094215345226,
+   "val_roc_auc": 0.5979609759759411
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.3524789884136164,
+   "val_loss": 0.3285815597425961,
+   "val_pr_auc": 0.016418683386140345,
+   "val_roc_auc": 0.6156301702613459
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.34338190030190274,
+   "val_loss": 0.33032661096665633,
+   "val_pr_auc": 0.01726015627772552,
+   "val_roc_auc": 0.6175140096332733
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.3363186313771612,
+   "val_loss": 0.3306208779807028,
+   "val_pr_auc": 0.01800419476445588,
+   "val_roc_auc": 0.6240032325707076
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.33043831944800395,
+   "val_loss": 0.3332065082067414,
+   "val_pr_auc": 0.018296093559822504,
+   "val_roc_auc": 0.6327051322208445
+  }
+ ],
+ "best": {
+  "n": 15792,
+  "n_pos": 193,
+  "prevalence": 0.012221377912867275,
+  "pr_auc": 0.02011275416558918,
+  "roc_auc": 0.5573136912257229,
+  "recall@far0.001": 0.015544041450777202,
+  "precision@far0.001": 0.16666666666666666,
+  "f1@far0.001": 0.02843601895734597,
+  "far@far0.001": 0.0009616001025706776,
+  "alarms_per_unit_day@far0.001": 1.3847041477017759,
+  "incident_recall@far0.001": 0.015625,
+  "n_incidents@far0.001": 64,
+  "recall@far0.01": 0.025906735751295335,
+  "precision@far0.01": 0.03125,
+  "f1@far0.01": 0.028328611898016998,
+  "far@far0.01": 0.009936534393230336,
+  "alarms_per_unit_day@far0.01": 14.308609526251683,
+  "incident_recall@far0.01": 0.03125,
+  "n_incidents@far0.01": 64
+ }
+}

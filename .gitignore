@@ -31,3 +31,6 @@ app/frontend/dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# dev database
+app/backend/app.db

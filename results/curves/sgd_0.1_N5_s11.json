@@ -1,0 +1,169 @@
+{
+ "run_id": "sgd_0.1_N5_s11",
+ "config": {
+  "name": "sgd_0.1",
+  "model": {
+   "type": "lstm",
+   "embed_dim": 32,
+   "hidden": 64,
+   "layers": 1,
+   "dropout": 0.3,
+   "layernorm": true,
+   "pooling": "last",
+   "scalar_groups": [
+    "time",
+    "volume"
+   ]
+  },
+  "train": {
+   "N": 5,
+   "seed": 11,
+   "batch_size": 128,
+   "epochs": 30,
+   "patience": 5,
+   "optimizer": "sgd",
+   "lr": 0.1,
+   "weight_decay": 0.0,
+   "momentum": 0.9,
+   "pos_weight": "sqrt",
+   "max_local": 256,
+   "max_global": 256,
+   "num_workers": 0
+  }
+ },
+ "curves": [
+  {
+   "epoch": 1,
+   "train_loss": 0.39494023259455663,
+   "val_loss": 0.331015263224566,
+   "val_pr_auc": 0.014582454417904787,
+   "val_roc_auc": 0.5314919881605271
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.3736756364181228,
+   "val_loss": 0.32670770753118406,
+   "val_pr_auc": 0.016918270455643848,
+   "val_roc_auc": 0.6028138179443547
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.3709135035064631,
+   "val_loss": 0.3213146158325153,
+   "val_pr_auc": 0.015988329254415023,
+   "val_roc_auc": 0.5835620524366016
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.3578064897179556,
+   "val_loss": 0.3257051749190782,
+   "val_pr_auc": 0.013998902825644208,
+   "val_roc_auc": 0.5806867186583968
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.3585206282510993,
+   "val_loss": 0.31457809549817684,
+   "val_pr_auc": 0.018255644140824465,
+   "val_roc_auc": 0.6542977877883098
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.34947350164311236,
+   "val_loss": 0.3259305753485652,
+   "val_pr_auc": 0.01615606674467001,
+   "val_roc_auc": 0.624720031541812
+  },
+  {
+   "epoch": 7,
+   "train_loss": 0.338468864009118,
+   "val_loss": 0.34734650978322207,
+   "val_pr_auc": 0.014902610486934897,
+   "val_roc_auc": 0.570687406227382
+  },
+  {
+   "epoch": 8,
+   "train_loss": 0.34114832339917045,
+   "val_loss": 0.32135508161910037,
+   "val_pr_auc": 0.01618817694231718,
+   "val_roc_auc": 0.6302941566268863
+  },
+  {
+   "epoch": 9,
+   "train_loss": 0.33448617851736695,
+   "val_loss": 0.3267088906260126,
+   "val_pr_auc": 0.018619928786943105,
+   "val_roc_auc": 0.6636090329956716
+  },
+  {
+   "epoch": 10,
+   "train_loss": 0.338189199866081,
+   "val_loss": 0.33255634970940356,
+   "val_pr_auc": 0.018157344069442406,
+   "val_roc_auc": 0.640341632102762
+  },
+  {
+   "epoch": 11,
+   "train_loss": 0.33178490236418084,
+   "val_loss": 0.3174199400641394,
+   "val_pr_auc": 0.021727856088500763,
+   "val_roc_auc": 0.6940062253226675
+  },
+  {
+   "epoch": 12,
+   "train_loss": 0.32971630099255644,
+   "val_loss": 0.3197241815329806,
+   "val_pr_auc": 0.019001171439725066,
+   "val_roc_auc": 0.6360790365530937
+  },
+  {
+   "epoch": 13,
+   "train_loss": 0.318410287606901,
+   "val_loss": 0.32890315944179815,
+   "val_pr_auc": 0.019727347179264547,
+   "val_roc_auc": 0.6715815116353613
+  },
+  {
+   "epoch": 14,
+   "train_loss": 0.31798487635466105,
+   "val_loss": 0.3449421768975958,
+   "val_pr_auc": 0.016140455526032896,
+   "val_roc_auc": 0.6174040650274181
+  },
+  {
+   "epoch": 15,
+   "train_loss": 0.309803821997968,
+   "val_loss": 0.35134753624115067,
+   "val_pr_auc": 0.017003992774309376,
+   "val_roc_auc": 0.6287869854816653
+  },
+  {
+   "epoch": 16,
+   "train_loss": 0.31571303739569556,
+   "val_loss": 0.33859259536321884,
+   "val_pr_auc": 0.014528007288884528,
+   "val_roc_auc": 0.5987194608927702
+  }
+ ],
+ "best": {
+  "n": 15792,
+  "n_pos": 193,
+  "prevalence": 0.012221377912867275,
+  "pr_auc": 0.021727856088500763,
+  "roc_auc": 0.6940062253226675,
+  "recall@far0.001": 0.0,
+  "precision@far0.001": 0.0,
+  "f1@far0.001": 0.0,
+  "far@far0.001": 0.0009616001025706776,
+  "alarms_per_unit_day@far0.001": 1.3847041477017759,
+  "incident_recall@far0.001": 0.0,
+  "n_incidents@far0.001": 64,
+  "recall@far0.01": 0.0,
+  "precision@far0.01": 0.0,
+  "f1@far0.01": 0.0,
+  "far@far0.01": 0.009936534393230336,
+  "alarms_per_unit_day@far0.01": 14.308609526251683,
+  "incident_recall@far0.01": 0.0,
+  "n_incidents@far0.01": 64
+ }
+}

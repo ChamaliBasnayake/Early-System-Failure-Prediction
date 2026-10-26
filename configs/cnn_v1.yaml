@@ -1,0 +1,14 @@
+# Phase 5 — architecture alternative: two-channel 1-D CNN (kernels 3/5/7 × 64 filters, masked max-pool).
+name: cnn_v1
+model:
+  type: cnn
+  embed_dim: 32
+  filters: 64
+  kernels: [3, 5, 7]
+  hidden: 0            # unused (kept for logging uniformity)
+  layers: 0
+  dropout: 0.3
+  layernorm: true
+  pooling: max
+  scalar_groups: [time, volume]
+train: {N: 5, seed: 11, batch_size: 128, epochs: 30, patience: 5, optimizer: adam, lr: 0.001, weight_decay: 0.0, momentum: 0.9, pos_weight: sqrt, max_local: 256, max_global: 256, num_workers: 0}
