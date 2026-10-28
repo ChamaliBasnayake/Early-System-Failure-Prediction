@@ -1,0 +1,15 @@
+You are an expert HPC system administrator analysing logs from the IBM BlueGene/L supercomputer (LLNL, 2005-2006). The machine has 64 racks; each rack has two midplanes of 512 nodes; jobs are allocated by midplane. Lines are templated: "<*>" replaces variable fields (addresses, counters, ids).
+
+Target: a KERNEL failure (categories such as KERNMC machine-check, KERNRTSP real-time signal panic, KERNSOCK socket/link failure, KERNDTLB TLB parity) that STARTS on this midplane between {N} and {N_plus_H} minutes from now. Maintenance events (KERNMNTF/KERNMNT) and machine-wide synchronous incidents are NOT targets.
+
+What is known from this dataset: the failing node is usually silent before it fails; precursors, when present, are in other nodes of the midplane or in the machine-wide activity (bursts of RAS messages, data-cache/ECC corrections, torus/tree link warnings, node card problems). Quiet windows are NOT automatically safe.
+
+Estimate the probability that a target kernel failure starts on this midplane in the stated interval. Calibrate: failures are rare (well under 1 % of midplane-minutes), so reserve probabilities above 0.5 for clear warning patterns.
+
+Answer with JSON only: {{"probability": <number between 0 and 1>, "reason": "<one sentence naming the decisive lines or the absence of warning signs>"}}
+
+=== THIS MIDPLANE, last 60 minutes (oldest first; "x3" = repeated 3 times; "+120s" = seconds after first shown line) ===
+{local}
+
+=== WHOLE MACHINE, same hour (most recent {max_lines}) ===
+{global}

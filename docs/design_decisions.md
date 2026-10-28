@@ -33,3 +33,18 @@ Q1 and Q3 reward documented data decisions.
 - **Failure-history features added as a separate group (hours since last unit/system failure, counts over 6 h / 24 h / 7 d, recent mass incidents and non-target alerts).** Alternative: content-only features. Kept both, as an explicit ablation: failures cluster in space and time, and the research question is how much log content adds beyond that clustering. Nothing after the window end t is used.
 - **XGBoost budget: 25 random configurations on the full feature set; the best configuration re-fitted on content-only and history-only.** Keeps the tuning budget equal to the neural family while still answering the ablation question.
 - **Baseline run repeated after the threshold fix and the history features; the superseded log rows (identical seeds/configs, same PR-AUC) were removed to avoid double counting.**
+
+## Phase 5
+- **Comparisons judged against the three-seed spread of v1 (±0.012), not against the seed-11 reference (0.044, an outlier).** Single-seed differences below that are reported as noise.
+- **Final ANN = semantic two-channel LSTM with the v1 hyper-parameters (Adam 1e-3, batch 128, 1×64, dropout 0.3, LayerNorm, last state, √ratio weighting, 60-min window).** Alternatives within noise: hidden 128, 2 layers, mean+max pooling, dropout 0.5, AdamW. Chosen on mechanism, before any test evaluation: equal validation performance, and the only model able to represent the 61 % of test-period lines that the template model maps to UNK. The template LSTM v1 remains the "initial ANN".
+- **Unsuccessful attempts kept and diagnosed:** lr 1e-4 / 3e-4 (under-fitting within the patience window), 6 h / 24 h local windows (dilution of the informative last hour), 1-D CNN (worst ROC: evidence is message identity, not local patterns), SGD (best bulk ranking / lowest validation loss but nothing at the head of the ranking: recall@1 % FAR = 0).
+- **Wrong expectations recorded:** lr 1e-2 did not diverge (gradient clipping + LayerNorm); full-ratio class weighting did not over-fire; both are reported as such.
+
+
+## Phase 6 — generalisation experiments and protocol controls (validation)
+- **D6.1 Leave-one-category-out by removing the category's training positives only** (`train.py --exclude-category`). Negatives and other categories unchanged, so the only difference to the all-category model is the absence of that failure type. Evaluated on the held-out category's positives vs all negatives.
+- **D6.2 Machine-disjoint by a seeded 20 % hold-out of racks from training** (`--holdout-racks 0.2`); rack list saved in the checkpoint. The all-rack model is scored on the same windows so the comparison isolates "never saw this rack".
+- **D6.3 Thresholds frozen from validation** into `results/thresholds_final.json` by the validation run of `evaluate_conditions.py`; the test run reads them and refuses to run twice.
+- **D6.4 Random-split and transductive-template controls are comparison-only** (`outcome=control` in the log) and never influence a model decision. The transductive control is additionally scored on test in Phase 7 because its effect is expected only where UNK is high.
+- **D6.5 Per-category table reports incident recall with the incident count** so that single-incident categories (KERNRTSP on validation) are not over-read.
+Findings: `docs/phase6_findings.md`.

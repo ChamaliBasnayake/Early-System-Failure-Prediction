@@ -19,10 +19,10 @@ scheduling, instead of discovering the failure after it happens.
 | 2 Dataset construction & split | done |
 | 3 Baselines | done |
 | 4 First neural model | done |
-| 5 Optimisation study | in progress |
-| 6 Generalisation experiments | — |
+| 5 Optimisation study | done |
+| 6 Generalisation experiments | in progress |
 | 7 Final evaluation (test, once) | — |
-| 8 Explainable AI | — |
+| 8 Explainable AI | in progress |
 | 9 Web application | in progress |
 | 10 Generative AI comparison | — |
 | 11 Report, video, presentation | — |
@@ -73,12 +73,26 @@ python -m src.models.plot_curves --runs lstm_v1_N5_s11 lstm_v1_N5_s22 lstm_v1_N5
 python -m src.models.embed_messages                       # frozen MiniLM embeddings for every masked text (semantic variant)
 powershell -ExecutionPolicy Bypass -File scripts\phase5_study.ps1
 python -m src.models.study_summary                        # → results/optimisation_study.md + results/figures/study_*.png
+# Phase 8 — explainable AI (Integrated Gradients; validated by perturbation; incorrect-prediction cases)
+python -m src.xai.perturbation --run lstm_v1_N5_s11 --n 50        # → results/xai_perturbation.md + figures/xai_perturbation.png
+python -m src.xai.cases --run lstm_v1_N5_s11                      # → results/xai_cases.md (write your interpretations in)
+python scripts/make_demo_inputs.py --run lstm_v1_N5_s11           # → results/demo/*.log for the app demo and video
 # Phase 9 — web application (development mode: SQLite; production: docker compose with PostgreSQL)
 uvicorn app.backend.main:app --reload --port 8000        # backend, from the project root (loads Drain state + checkpoint once)
 cd app/frontend && npm install && npm run dev            # frontend at http://localhost:5173 (proxies /api to :8000)
 pytest -q tests/test_phase9.py                           # API tests (normal, invalid, empty, unknown midplane, feedback, history)
 docker compose up --build                                # full stack: Postgres + backend (:8000) + nginx frontend (:8080)
-# Protocol controls (Phase 6; comparison only, never for model selection)
+# Phase 6 — generalisation experiments (validation) and protocol controls
+powershell -ExecutionPolicy Bypass -File scripts\phase6_retrain.ps1     # or: Set-ExecutionPolicy -Scope Process Bypass; .\scripts\phase6_retrain.ps1
+python -m src.models.evaluate_conditions --split validation             # → results/validation_eval/, freezes results/thresholds_final.json
+# Phase 10 — Gemini as a predictor: prompt selection on VALIDATION (needs GEMINI_API_KEY user env var; new terminal)
+python -m src.genai.gemini_eval --split validation --prompts p1 --limit 10   # dry run: 10 calls
+python -m src.genai.gemini_eval --split validation                           # 4 prompts × 300 windows (cached; resumable)
+python -m src.genai.gemini_eval --select p2                                  # freeze the prompt chosen from results/genai/gemini_validation_N5.md
+# Phase 7 — THE single test evaluation (after Phase 10 prompt selection on validation)
+python -m src.genai.gemini_eval --split test                                 # selected prompt only; refuses to run twice
+python -m src.models.evaluate_conditions --split test                   # → results/test_eval/ (refuses to run twice)
+# Protocol controls (comparison only, never for model selection)
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
 python -m src.models.baselines --tag tc --n_configs 10                            # leaky transductive templates

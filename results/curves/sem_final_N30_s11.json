@@ -1,0 +1,164 @@
+{
+ "run_id": "sem_final_N30_s11",
+ "config": {
+  "name": "sem_final",
+  "model": {
+   "type": "lstm_semantic",
+   "embed_dim": 384,
+   "proj_dim": 64,
+   "embedding_file": "data/interim/masked_embeddings_minilm.npy",
+   "hidden": 64,
+   "layers": 1,
+   "dropout": 0.3,
+   "layernorm": true,
+   "pooling": "last",
+   "scalar_groups": [
+    "time",
+    "volume"
+   ]
+  },
+  "train": {
+   "N": 30,
+   "seed": 11,
+   "batch_size": 128,
+   "epochs": 30,
+   "patience": 5,
+   "optimizer": "adam",
+   "lr": 0.001,
+   "weight_decay": 0.0,
+   "momentum": 0.9,
+   "pos_weight": "sqrt",
+   "max_local": 256,
+   "max_global": 256,
+   "num_workers": 0
+  }
+ },
+ "curves": [
+  {
+   "epoch": 1,
+   "train_loss": 0.44022176236518995,
+   "val_loss": 0.3876278195634181,
+   "val_pr_auc": 0.02123209006709105,
+   "val_roc_auc": 0.5594467248508986
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.392643507681284,
+   "val_loss": 0.3786036452795372,
+   "val_pr_auc": 0.025023072703950128,
+   "val_roc_auc": 0.5753378275403107
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.3787336511769541,
+   "val_loss": 0.39223626541299583,
+   "val_pr_auc": 0.026547608004759762,
+   "val_roc_auc": 0.5610614388913161
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.3682853049860604,
+   "val_loss": 0.3879228156176562,
+   "val_pr_auc": 0.026250349485911255,
+   "val_roc_auc": 0.5561362689615232
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.36399469099485293,
+   "val_loss": 0.3829775516554731,
+   "val_pr_auc": 0.026598797114999295,
+   "val_roc_auc": 0.5751760259288987
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.36366122459984535,
+   "val_loss": 0.3945452996297806,
+   "val_pr_auc": 0.02662269115865917,
+   "val_roc_auc": 0.5532428903813134
+  },
+  {
+   "epoch": 7,
+   "train_loss": 0.35337508782409277,
+   "val_loss": 0.3942585607509058,
+   "val_pr_auc": 0.02595774670721978,
+   "val_roc_auc": 0.5785992603354907
+  },
+  {
+   "epoch": 8,
+   "train_loss": 0.3478346703123899,
+   "val_loss": 0.3932205068203648,
+   "val_pr_auc": 0.023695562140668484,
+   "val_roc_auc": 0.5716753197931378
+  },
+  {
+   "epoch": 9,
+   "train_loss": 0.34460585355454465,
+   "val_loss": 0.3985407172515166,
+   "val_pr_auc": 0.02459994219613884,
+   "val_roc_auc": 0.5674466334088577
+  },
+  {
+   "epoch": 10,
+   "train_loss": 0.34092595259079767,
+   "val_loss": 0.39821594208091937,
+   "val_pr_auc": 0.04598940008517236,
+   "val_roc_auc": 0.5569937921014397
+  },
+  {
+   "epoch": 11,
+   "train_loss": 0.33872698780331795,
+   "val_loss": 0.40337698646213865,
+   "val_pr_auc": 0.026925699484564358,
+   "val_roc_auc": 0.5491879438749073
+  },
+  {
+   "epoch": 12,
+   "train_loss": 0.3327526833800844,
+   "val_loss": 0.4099806934709271,
+   "val_pr_auc": 0.025526173264933057,
+   "val_roc_auc": 0.551382044847241
+  },
+  {
+   "epoch": 13,
+   "train_loss": 0.3317421919210633,
+   "val_loss": 0.41143332929611054,
+   "val_pr_auc": 0.027387209992633717,
+   "val_roc_auc": 0.5660899891285573
+  },
+  {
+   "epoch": 14,
+   "train_loss": 0.32459179093427515,
+   "val_loss": 0.4041840777211322,
+   "val_pr_auc": 0.037312066019440183,
+   "val_roc_auc": 0.5585528789002571
+  },
+  {
+   "epoch": 15,
+   "train_loss": 0.3251789068127606,
+   "val_loss": 0.4182244301163489,
+   "val_pr_auc": 0.030525017787974167,
+   "val_roc_auc": 0.5736349735326093
+  }
+ ],
+ "best": {
+  "n": 15402,
+  "n_pos": 260,
+  "prevalence": 0.016880924555252565,
+  "pr_auc": 0.04598940008517236,
+  "roc_auc": 0.5569937921014397,
+  "recall@far0.001": 0.023076923076923078,
+  "precision@far0.001": 0.2857142857142857,
+  "f1@far0.001": 0.042704626334519574,
+  "far@far0.001": 0.0009906221106855105,
+  "alarms_per_unit_day@far0.001": 1.4264958393871352,
+  "incident_recall@far0.001": 0.024096385542168676,
+  "n_incidents@far0.001": 83,
+  "recall@far0.01": 0.08076923076923077,
+  "precision@far0.01": 0.12280701754385964,
+  "f1@far0.01": 0.09744779582366589,
+  "far@far0.01": 0.009906221106855104,
+  "alarms_per_unit_day@far0.01": 14.26495839387135,
+  "incident_recall@far0.01": 0.04819277108433735,
+  "n_incidents@far0.01": 83
+ }
+}

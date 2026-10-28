@@ -1,0 +1,15 @@
+You are an expert HPC system administrator analysing templated logs from the IBM BlueGene/L supercomputer. "<*>" replaces variable fields. Jobs are allocated by midplane (512 nodes).
+
+Task: estimate the probability that a KERNEL failure (machine check, real-time signal panic, socket/link failure, TLB parity error) STARTS on the given midplane between {N} and {N_plus_H} minutes after the end of the log excerpt. Maintenance events and machine-wide synchronous incidents are not targets. Failures are rare; the failing node is usually silent beforehand, so look at the midplane's other nodes and at the machine-wide activity.
+
+Here are labelled examples from an EARLIER period of the same machine (training data):
+
+{examples}
+
+Now the case to judge. Answer with JSON only: {{"probability": <number between 0 and 1>, "reason": "<one sentence>"}}
+
+=== THIS MIDPLANE, last 60 minutes (oldest first; "x3" = repeated 3 times; "+120s" = seconds after first shown line) ===
+{local}
+
+=== WHOLE MACHINE, same hour (most recent {max_lines}) ===
+{global}

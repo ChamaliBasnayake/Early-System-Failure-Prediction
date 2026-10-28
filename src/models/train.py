@@ -74,6 +74,8 @@ def main() -> None:
     ap.add_argument("--N", type=int, default=None); ap.add_argument("--tag", default=""); ap.add_argument("--sample", action="store_true")
     ap.add_argument("--set", action="append", default=[]); ap.add_argument("--purpose", default=""); ap.add_argument("--changed", default="")
     ap.add_argument("--phase", type=int, default=4); ap.add_argument("--name", default=None, help="run name override (default: config name)")
+    ap.add_argument("--exclude-category", default=None, help="Phase 6: drop TRAINING positives of this failure category (leave-one-category-out)")
+    ap.add_argument("--holdout-racks", type=float, default=0.0, help="Phase 6: fraction of racks held out of TRAINING (machine-disjoint); seeded")
     args = ap.parse_args()
     cfg = apply_overrides(yaml.safe_load(Path(args.config).read_text()), args.set)
     if args.name: cfg["name"] = args.name
@@ -84,6 +86,17 @@ def main() -> None:
     name = cfg["name"] + (f"_{args.tag}" if args.tag else "")
 
     tr_df, tr_X, cols = load_windows(sfx, N, "train", cfg["model"]["scalar_groups"]); va_df, va_X, _ = load_windows(sfx, N, "validation", cfg["model"]["scalar_groups"])
+    held_racks: list[str] = []
+    if args.exclude_category:                       # leave-one-failure-category-out: remove the category's positive windows from TRAINING only
+        keep = ~((tr_df["anchor"] == "pos") & (tr_df["category"] == args.exclude_category)).values
+        print(f"[train] excluding {int((~keep).sum())} training windows anchored on {args.exclude_category}")
+        tr_df, tr_X = tr_df[keep].reset_index(drop=True), tr_X[keep]
+    if args.holdout_racks > 0:                      # machine-disjoint: remove a seeded fraction of racks (R##) from TRAINING only
+        racks = sorted(tr_df["unit"].str.split("-").str[0].unique()); rng = np.random.default_rng(seed)
+        held_racks = sorted(rng.choice(racks, size=max(1, int(round(args.holdout_racks * len(racks)))), replace=False).tolist())
+        keep = ~tr_df["unit"].str.split("-").str[0].isin(held_racks).values
+        print(f"[train] holding out {len(held_racks)} of {len(racks)} racks from training ({int((~keep).sum())} windows): {held_racks}")
+        tr_df, tr_X = tr_df[keep].reset_index(drop=True), tr_X[keep]
     tr_ds = WindowDataset(tr_df, tr_X, N, t["max_local"], t["max_global"]); va_ds = WindowDataset(va_df, va_X, N, t["max_local"], t["max_global"], scaler=tr_ds.scaler)
     g = torch.Generator(); g.manual_seed(seed)
     tr_dl = DataLoader(tr_ds, batch_size=t["batch_size"], shuffle=True, collate_fn=collate, num_workers=t["num_workers"], generator=g)
@@ -110,10 +123,11 @@ def main() -> None:
 
     run_id = f"{name}_N{N}_s{seed}"
     for d in ("checkpoints", "curves", "scores"): (RESULTS / d).mkdir(exist_ok=True)
-    torch.save({"state_dict": best_state, "config": cfg, "vocab": vocab, "n_scalars": tr_X.shape[1], "scalar_cols": cols, "scaler": tr_ds.scaler, "n_params": n_params}, RESULTS / "checkpoints" / f"{run_id}.pt")
+    torch.save({"state_dict": best_state, "config": cfg, "vocab": vocab, "n_scalars": tr_X.shape[1], "scalar_cols": cols, "scaler": tr_ds.scaler, "n_params": n_params,
+                "exclude_category": args.exclude_category, "held_racks": held_racks, "tag": args.tag}, RESULTS / "checkpoints" / f"{run_id}.pt")
     (RESULTS / "curves" / f"{run_id}.json").write_text(json.dumps({"run_id": run_id, "config": cfg, "curves": curves, "best": {k: v for k, v in best_res.items() if not isinstance(v, dict)}}, indent=1))
     pd.DataFrame({"unit": va_df["unit"], "t_ns": va_df["t_ns"], "label": vy, "score": best_scores, "incident_id": va_df["incident_id"], "anchor": va_df["anchor"]}).to_parquet(RESULTS / "scores" / f"{run_id}_validation.parquet", index=False)
-    hp = f"N={N};type={cfg['model']['type']};emb={cfg['model']['embed_dim']};hidden={cfg['model']['hidden']};layers={cfg['model']['layers']};drop={cfg['model']['dropout']};pool={cfg['model']['pooling']};opt={t['optimizer']};lr={t['lr']};bs={t['batch_size']};wd={t['weight_decay']};mom={t['momentum']};posw={t['pos_weight']};tag={args.tag or 'primary'}"
+    hp = (f"excl={args.exclude_category};" if args.exclude_category else "") + (f"racks_out={args.holdout_racks};" if args.holdout_racks else "") + f"N={N};type={cfg['model']['type']};emb={cfg['model']['embed_dim']};hidden={cfg['model']['hidden']};layers={cfg['model']['layers']};drop={cfg['model']['dropout']};pool={cfg['model']['pooling']};opt={t['optimizer']};lr={t['lr']};bs={t['batch_size']};wd={t['weight_decay']};mom={t['momentum']};posw={t['pos_weight']};tag={args.tag or 'primary'}"
     best_ep = max(curves, key=lambda c: c["val_pr_auc"])["epoch"]
     log_run(run_id=run_id, phase=args.phase, model_family=cfg["model"]["type"], purpose=args.purpose or f"{name} N={N}", changed_vs_previous=args.changed or ("; ".join(args.set) if args.set else "config as file"),
             config_path=args.config, key_hyperparams=hp, seed=seed, split="validation", val_pr_auc=round(best_res["pr_auc"], 4),

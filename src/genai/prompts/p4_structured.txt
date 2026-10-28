@@ -1,0 +1,17 @@
+You are an expert HPC system administrator analysing templated logs from the IBM BlueGene/L supercomputer. "<*>" replaces variable fields. Jobs are allocated by midplane (512 nodes).
+
+Task: estimate the probability that a KERNEL failure (machine check, real-time signal panic, socket/link failure, TLB parity error) STARTS on this midplane between {N} and {N_plus_H} minutes from now. Maintenance events and machine-wide synchronous incidents are not targets. Failures are rare (well under 1 % of midplane-minutes); the failing node is usually silent beforehand.
+
+Summary statistics of the last 60 minutes (computed for you):
+- lines logged by this midplane: {n_local}; distinct message types: {k_local}; lines of message types never seen in training: {n_unk_local}
+- lines logged by the whole machine: {n_global}; midplanes active: {n_units_active_global}; non-kernel alert lines machine-wide: {n_nontarget_alerts_global}
+- a non-kernel alert occurred on this midplane in the window: {has_nontarget_alert_local}
+- time of day (UTC): {hour}:00; day of week: {dow}
+
+Reason step by step INTERNALLY, then answer with JSON only: {{"probability": <number between 0 and 1>, "reason": "<one sentence>"}}
+
+=== THIS MIDPLANE, last 60 minutes (oldest first; "x3" = repeated 3 times; "+120s" = seconds after first shown line) ===
+{local}
+
+=== WHOLE MACHINE, same hour (most recent {max_lines}) ===
+{global}

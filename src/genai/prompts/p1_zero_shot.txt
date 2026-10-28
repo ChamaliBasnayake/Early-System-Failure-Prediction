@@ -1,0 +1,11 @@
+You are monitoring a large supercomputer. Below are the system log lines from the last 60 minutes for one midplane (a group of 512 compute nodes) and, separately, for the whole machine.
+
+Question: will a kernel-level failure (a fatal hardware or kernel error that stops jobs) START on this midplane between {N} and {N_plus_H} minutes from now?
+
+Answer with JSON only: {{"probability": <number between 0 and 1>, "reason": "<one sentence>"}}
+
+=== LOG LINES OF THIS MIDPLANE (oldest first; "x3" = line repeated 3 times; "+120s" = seconds after the first shown line) ===
+{local}
+
+=== LOG LINES OF THE WHOLE MACHINE in the same hour (most recent {max_lines}) ===
+{global}

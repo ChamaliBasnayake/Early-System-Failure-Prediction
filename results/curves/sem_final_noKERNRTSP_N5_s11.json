@@ -1,0 +1,171 @@
+{
+ "run_id": "sem_final_noKERNRTSP_N5_s11",
+ "config": {
+  "name": "sem_final_noKERNRTSP",
+  "model": {
+   "type": "lstm_semantic",
+   "embed_dim": 384,
+   "proj_dim": 64,
+   "embedding_file": "data/interim/masked_embeddings_minilm.npy",
+   "hidden": 64,
+   "layers": 1,
+   "dropout": 0.3,
+   "layernorm": true,
+   "pooling": "last",
+   "scalar_groups": [
+    "time",
+    "volume"
+   ]
+  },
+  "train": {
+   "N": 5,
+   "seed": 11,
+   "batch_size": 128,
+   "epochs": 30,
+   "patience": 5,
+   "optimizer": "adam",
+   "lr": 0.001,
+   "weight_decay": 0.0,
+   "momentum": 0.9,
+   "pos_weight": "sqrt",
+   "max_local": 256,
+   "max_global": 256,
+   "num_workers": 0
+  }
+ },
+ "curves": [
+  {
+   "epoch": 1,
+   "train_loss": 0.3801208931833642,
+   "val_loss": 0.34741273048317783,
+   "val_pr_auc": 0.015942859652899162,
+   "val_roc_auc": 0.6167997018541443
+  },
+  {
+   "epoch": 2,
+   "train_loss": 0.3349636959839085,
+   "val_loss": 0.3401360040136142,
+   "val_pr_auc": 0.018232498752022406,
+   "val_roc_auc": 0.6496505521976133
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.32483808768847944,
+   "val_loss": 0.3435993252554201,
+   "val_pr_auc": 0.018488769578053087,
+   "val_roc_auc": 0.6495831239348079
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.31469687939688135,
+   "val_loss": 0.3386460487120299,
+   "val_pr_auc": 0.018899270049873088,
+   "val_roc_auc": 0.6521244719088211
+  },
+  {
+   "epoch": 5,
+   "train_loss": 0.31033062221570284,
+   "val_loss": 0.343541880509049,
+   "val_pr_auc": 0.020401170672657922,
+   "val_roc_auc": 0.6683896303967938
+  },
+  {
+   "epoch": 6,
+   "train_loss": 0.30009715168352724,
+   "val_loss": 0.3342776480295979,
+   "val_pr_auc": 0.0193677776643558,
+   "val_roc_auc": 0.6738619487697995
+  },
+  {
+   "epoch": 7,
+   "train_loss": 0.29614246066211747,
+   "val_loss": 0.3455644987878345,
+   "val_pr_auc": 0.02081409800931281,
+   "val_roc_auc": 0.6766774939405907
+  },
+  {
+   "epoch": 8,
+   "train_loss": 0.2912300078473316,
+   "val_loss": 0.33929988787166976,
+   "val_pr_auc": 0.020081268715519063,
+   "val_roc_auc": 0.6699248689716061
+  },
+  {
+   "epoch": 9,
+   "train_loss": 0.2874857696450827,
+   "val_loss": 0.344485292137575,
+   "val_pr_auc": 0.01972929015979573,
+   "val_roc_auc": 0.6606101360954785
+  },
+  {
+   "epoch": 10,
+   "train_loss": 0.2837703683196682,
+   "val_loss": 0.35221656797625495,
+   "val_pr_auc": 0.020902164562647613,
+   "val_roc_auc": 0.6692959260375068
+  },
+  {
+   "epoch": 11,
+   "train_loss": 0.2768836127908807,
+   "val_loss": 0.3553811753774486,
+   "val_pr_auc": 0.021125572807670738,
+   "val_roc_auc": 0.6697846979031139
+  },
+  {
+   "epoch": 12,
+   "train_loss": 0.27152066986265067,
+   "val_loss": 0.35807250408416097,
+   "val_pr_auc": 0.020620547393893282,
+   "val_roc_auc": 0.6712731020687854
+  },
+  {
+   "epoch": 13,
+   "train_loss": 0.26842052761686447,
+   "val_loss": 0.3652257465784794,
+   "val_pr_auc": 0.020323674758988705,
+   "val_roc_auc": 0.6579513699396833
+  },
+  {
+   "epoch": 14,
+   "train_loss": 0.26416330715383385,
+   "val_loss": 0.3705192812791107,
+   "val_pr_auc": 0.019885358493905783,
+   "val_roc_auc": 0.6526712055077265
+  },
+  {
+   "epoch": 15,
+   "train_loss": 0.26026814157650713,
+   "val_loss": 0.38867003039627696,
+   "val_pr_auc": 0.019430560647789474,
+   "val_roc_auc": 0.6351219205960791
+  },
+  {
+   "epoch": 16,
+   "train_loss": 0.2571462629365776,
+   "val_loss": 0.3821095142441801,
+   "val_pr_auc": 0.01917054316057585,
+   "val_roc_auc": 0.6447757877398146
+  }
+ ],
+ "best": {
+  "n": 15792,
+  "n_pos": 193,
+  "prevalence": 0.012221377912867275,
+  "pr_auc": 0.021125572807670738,
+  "roc_auc": 0.6697846979031139,
+  "recall@far0.001": 0.0,
+  "precision@far0.001": 0.0,
+  "f1@far0.001": 0.0,
+  "far@far0.001": 0.0009616001025706776,
+  "alarms_per_unit_day@far0.001": 1.3847041477017759,
+  "incident_recall@far0.001": 0.0,
+  "n_incidents@far0.001": 64,
+  "recall@far0.01": 0.0,
+  "precision@far0.01": 0.0,
+  "f1@far0.01": 0.0,
+  "far@far0.01": 0.009936534393230336,
+  "alarms_per_unit_day@far0.01": 14.308609526251683,
+  "incident_recall@far0.01": 0.0,
+  "n_incidents@far0.01": 64
+ }
+}
