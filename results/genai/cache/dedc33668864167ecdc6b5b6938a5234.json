@@ -1,0 +1,1 @@
+{"text": "{\n  \"probability\": 0.15,\n  \"reason\": \"Machine-wide node card and memory correction events indicate hardware instability.\"\n}", "latency_s": 5.548, "in_tokens": 2735, "out_tokens": 33, "thinking_tokens": 304, "model": "gemini-3.5-flash-lite", "thinking_level": "low", "status": "completed", "date": "2026-10-28T12:07:43+00:00", "prompt_chars": 9793}

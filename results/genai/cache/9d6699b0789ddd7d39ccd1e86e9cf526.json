@@ -1,0 +1,1 @@
+{"text": "{\"probability\": 0.01, \"reason\": \"There are no logs for this midplane in the past hour, and the errors reported occurred elsewhere in the machine.\"}", "latency_s": 6.465, "in_tokens": 1238, "out_tokens": 37, "thinking_tokens": 0, "model": "gemini-3.8-flash", "thinking_level": "low", "status": "completed", "date": "2026-10-28T15:05:28+00:00", "prompt_chars": 3719}
