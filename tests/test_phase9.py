@@ -43,5 +43,9 @@ def test_feedback_and_history(client):
     h = client.get("/api/history").json(); assert h[0]["id"] == pid and h[0]["feedback"]["correct"] is False
 
 
-def test_explain_not_implemented_yet(client):
-    assert client.post("/api/explain", json={"log_text": GOOD, "unit": "R02-M1", "lead_time": 5}).status_code == 501
+def test_explain_returns_attributions(client):
+    r = client.post("/api/explain", json={"log_text": GOOD, "unit": "R02-M1", "lead_time": 5}); assert r.status_code == 200, r.text
+    ex = r.json(); assert len(ex["items_local"]) >= 1 and len(ex["items_global"]) >= 1 and len(ex["scalars"]) == 17
+    assert all("text" in d for d in ex["items_local"]) and abs(ex["completeness_gap"]) < 0.5
+    assert any(l["item"] is not None for l in ex["lines"])
+    assert client.post("/api/explain", json={"log_text": GOOD, "lead_time": 5}).status_code == 400          # unit required

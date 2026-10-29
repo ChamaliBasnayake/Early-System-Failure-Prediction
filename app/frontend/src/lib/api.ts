@@ -1,7 +1,7 @@
 export type UnitResult = {
   prediction_id: number; unit: string; score: number; mc_spread: number | null; mc_samples: number
   alarm_at_far: Record<string, boolean>; thresholds: Record<string, number>; recommendation: string
-  n_local: number; n_global: number; unk_rate_local: number; unk_rate_global: number; n_new_texts: number; out_of_distribution: boolean
+  n_local: number; n_global: number; unk_rate_local: number; unk_rate_global: number; n_new_texts: number; out_of_distribution: boolean; new_texts_embedded: number; encoder: string
   window_start: string; window_end: string; local_lines: { timestamp: string; node: string; unit: string; template_index: number; message: string }[]
 }
 export type PredictResponse = {

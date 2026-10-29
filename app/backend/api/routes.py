@@ -69,7 +69,7 @@ def predict(req: PredictRequest, db: Session = Depends(get_db)):
         db.add(row); db.commit(); db.refresh(row)
         results.append(UnitResult(prediction_id=row.id, unit=u, score=out["score"], mc_spread=out["mc_spread"], mc_samples=out["mc_samples"], alarm_at_far=out["alarm_at_far"],
                                   thresholds=out["thresholds"], recommendation=rec, n_local=win["n_local"], n_global=win["n_global"], unk_rate_local=win["unk_rate_local"],
-                                  unk_rate_global=win["unk_rate_global"], n_new_texts=win["n_new_texts"], out_of_distribution=ood,
+                                  unk_rate_global=win["unk_rate_global"], n_new_texts=win["n_new_texts"], out_of_distribution=ood, new_texts_embedded=out.get("new_texts_embedded", 0), encoder=out.get("encoder", ""),
                                   window_start=win["window_start"].isoformat(), window_end=win["window_end"].isoformat(), local_lines=win["lines"]))
     results.sort(key=lambda r: -r.score)
     return PredictResponse(model_run=svc.resolve(req.lead_time)[1]["run"], model_version=settings.MODEL_VERSION, lead_time_requested=req.lead_time,
@@ -77,9 +77,33 @@ def predict(req: PredictRequest, db: Session = Depends(get_db)):
                            units_detected=parsed.units, latency_ms=(time.time() - t0) * 1000, score_meaning=SCORE_MEANING, limitations=settings.LIMITATIONS, results=results)
 
 
+EXPLAIN_MEANING = ("Integrated Gradients: how much each item (a run of one message type) and each context feature moved the model's logit, relative to an EMPTY window. "
+                   "Positive values push towards 'failure', negative away. The values sum to the difference between this window's logit and the empty window's logit. "
+                   "This shows what the model was sensitive to; it does not prove that a message caused the prediction, and correlated messages may share attribution.")
+
+
 @router.post("/explain")
 def explain(req: PredictRequest):
-    raise HTTPException(501, "Explanation (Integrated Gradients over the window) is implemented in Phase 8.")
+    feat, svc = services()
+    if not req.unit: raise HTTPException(400, "Specify the midplane ('unit') to explain.")
+    parsed = feat.parse(req.log_text or "")
+    if parsed.df.empty: raise HTTPException(422, "No parsable BGL lines found.")
+    if req.unit not in parsed.units: raise HTTPException(422, f"Midplane {req.unit} does not appear in the input.")
+    t0 = time.time(); win = feat.window(parsed, req.unit); ex = svc.explain(win, req.lead_time)
+    tpl_text = _template_texts(feat)
+    for d in ex["items_local"] + ex["items_global"]:
+        d["text"] = feat.text_of(d["masked_id"]) or tpl_text.get(d["template_index"], "UNK")
+    return {"unit": req.unit, "meaning": EXPLAIN_MEANING, "latency_ms": (time.time() - t0) * 1000, "lines": win["lines"], **ex}
+
+
+_tpl_cache: dict | None = None
+
+
+def _template_texts(feat: Featurizer) -> dict:
+    global _tpl_cache
+    if _tpl_cache is None:
+        t = pd.read_csv(settings.INTERIM / "templates.csv"); _tpl_cache = dict(zip(t["template_index"].astype(int), t["template"]))
+    return _tpl_cache
 
 
 @router.post("/feedback")

@@ -74,9 +74,9 @@ python -m src.models.embed_messages                       # frozen MiniLM embedd
 powershell -ExecutionPolicy Bypass -File scripts\phase5_study.ps1
 python -m src.models.study_summary                        # → results/optimisation_study.md + results/figures/study_*.png
 # Phase 8 — explainable AI (Integrated Gradients; validated by perturbation; incorrect-prediction cases)
-python -m src.xai.perturbation --run lstm_v1_N5_s11 --n 50        # → results/xai_perturbation.md + figures/xai_perturbation.png
-python -m src.xai.cases --run lstm_v1_N5_s11                      # → results/xai_cases.md (write your interpretations in)
-python scripts/make_demo_inputs.py --run lstm_v1_N5_s11           # → results/demo/*.log for the app demo and video
+python -m src.xai.perturbation --run sem_final_N5_s11 --n 50       # → results/xai_perturbation.md + figures/xai_perturbation.png
+python -m src.xai.cases --run sem_final_N5_s11                     # → results/xai_cases.md (write your interpretations in)
+python scripts/make_demo_inputs.py --run sem_final_N5_s11          # → results/demo/*.log for the app demo and video
 # Phase 9 — web application (development mode: SQLite; production: docker compose with PostgreSQL)
 uvicorn app.backend.main:app --reload --port 8000        # backend, from the project root (loads Drain state + checkpoint once)
 cd app/frontend && npm install && npm run dev            # frontend at http://localhost:5173 (proxies /api to :8000)

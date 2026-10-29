@@ -9,7 +9,7 @@ services:
     build: { context: ., dockerfile: app/backend/Dockerfile }
     environment:
       DATABASE_URL: postgresql+psycopg2://bgl:bgl@db:5432/bgl
-      MODEL_RUNS: "5:lstm_v1_N5_s11"
+      MODEL_RUNS: "1:sem_final_N1_s11,5:sem_final_N5_s11,15:sem_final_N15_s11,30:sem_final_N30_s11"
     volumes:
       - ./data/interim:/srv/data/interim:ro
       - ./results:/srv/results:ro

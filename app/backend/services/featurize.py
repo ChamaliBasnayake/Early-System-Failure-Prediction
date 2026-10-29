@@ -35,6 +35,14 @@ class Featurizer:
         self.masked_id = dict(zip(mm["text"], mm["masked_id"])); self.n_known_texts = len(mm)
         self.next_new_id = int(mm["masked_id"].max()) + 1; self.new_texts: dict[str, int] = {}
         self.cache: dict[str, int] = {}
+        self.text_by_id = {int(v): k for k, v in self.masked_id.items()}
+
+    def text_of(self, masked_id: int) -> str | None:
+        t = self.text_by_id.get(int(masked_id))
+        if t is None:
+            for k, v in self.new_texts.items():
+                if v == masked_id: return k
+        return t
 
     def parse(self, text: str) -> ParsedLog:
         lines = [l for l in text.splitlines() if l.strip()]
@@ -92,5 +100,18 @@ class Featurizer:
         return {"unit": unit, "window_start": t0, "window_end": t_end, "local": (tl, ml, cl, dl), "global": (tg, mg, cg, dg), "scalars": scal,
                 "n_local": len(loc), "n_global": len(g), "unk_rate_local": unk_local / max(len(loc), 1), "unk_rate_global": unk_global / max(len(g), 1),
                 "n_new_texts": int(sum(1 for m in g["masked"] if m in self.new_texts)),
-                "lines": [{"timestamp": r.timestamp.isoformat(), "node": r.node, "unit": r.unit, "template_index": int(r.template_index), "message": r.message}
-                          for r in loc.tail(200).itertuples()]}
+                "new_texts_by_id": {int(i): m for m, i in self.new_texts.items() if i in set(int(x) for x in np.r_[ml, mg].astype(np.int64))} if self.new_texts else {},
+                "lines": self._lines_with_items(loc, ml, len(ml))}
+
+    @staticmethod
+    def _lines_with_items(loc: pd.DataFrame, mid_items: list, n_items: int, keep: int = 300) -> list[dict]:
+        """Map each raw local line to the index of the collapsed item it belongs to (runs of equal masked text, last n_items runs)."""
+        mids = loc["masked_id"].values
+        if len(mids) == 0: return []
+        change = np.r_[True, mids[1:] != mids[:-1]]; run_idx = np.cumsum(change) - 1
+        n_runs = int(run_idx[-1]) + 1; first_kept = n_runs - n_items          # runs before the cap have no item
+        item_of_line = run_idx - first_kept
+        rows = []
+        for (r, it) in list(zip(loc.itertuples(), item_of_line))[-keep:]:
+            rows.append({"timestamp": r.timestamp.isoformat(), "node": r.node, "unit": r.unit, "template_index": int(r.template_index), "message": r.message, "item": int(it) if it >= 0 else None})
+        return rows

@@ -29,6 +29,19 @@ class TwoChannelSemanticLSTM(nn.Module):
         self.local = RNNEncoder(proj_dim + 2, hidden, layers, layernorm, pooling, dropout); self.glob = RNNEncoder(proj_dim + 2, hidden, layers, layernorm, pooling, dropout)
         self.head = FusionHead(self.local.out_dim + self.glob.out_dim + n_scalars, dropout)
 
+    @property
+    def n_texts(self) -> int: return self.table.weight.shape[0]
+
+    def add_texts(self, texts_by_id: dict[int, str], encode) -> int:
+        """Deployment path: embed masked texts the table has never seen (ids ≥ n_texts) with the SAME frozen encoder and
+        append them. `encode(list[str]) -> array (n, 384)`. Returns the number of rows added. Nothing is trained."""
+        new = {int(i): t for i, t in texts_by_id.items() if int(i) >= self.n_texts or not torch.any(self.table.weight[int(i)] != 0)}
+        if not new: return 0
+        W = self.table.weight.data; top = max(new) + 1
+        if top > W.shape[0]: W = torch.cat([W, torch.zeros(top - W.shape[0], W.shape[1], dtype=W.dtype)], 0)
+        ids = sorted(new); W[ids] = torch.as_tensor(np.asarray(encode([new[i] for i in ids]), dtype=np.float32))
+        self.table = nn.Embedding.from_pretrained(W, freeze=True); return len(ids)
+
     def _steps(self, M, C, D): return torch.cat([self.proj(self.table(M)), C.unsqueeze(-1), D.unsqueeze(-1)], -1)
 
     def forward(self, loc, glo, S):

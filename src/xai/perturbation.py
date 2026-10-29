@@ -1,0 +1,86 @@
+"""Sanity-check the explanations (Question 5.b): remove the top-attributed items and watch the score fall.
+
+For a set of VALIDATION positive windows (true positives of the chosen run) and the hard-negative false
+positives: compute IG, then (a) delete the top-k positively attributed items (k = 1, 3, 5) from the window and
+re-score; (b) delete k RANDOM items as a control. If the attributions are meaningful, (a) lowers the score far
+more than (b). Also reports the completeness gap distribution. Writes results/xai_perturbation.md and
+results/figures/xai_perturbation.png.
+Usage: python -m src.xai.perturbation --run lstm_v1_N5_s11 [--n 50] [--N 5]
+"""
+from __future__ import annotations
+
+import argparse
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+
+from src.models.seq_data import WindowDataset, collate, load_windows
+from src.utils.paths import DATA_INTERIM, RESULTS
+from src.utils.seeds import set_seed
+from src.xai.integrated_gradients import integrated_gradients, top_items
+from src.xai.loader import load_run
+
+
+def delete_items(loc, glo, idx_local, idx_global):
+    """Return a copy of the (loc, glo) tensors with the given valid-item indices removed (re-right-aligned)."""
+    def drop(chan, idxs):
+        T, M, C, D, L = chan; n = int(L[0]); keep = [i for i in range(n) if i not in set(idxs)]
+        if not keep: return (torch.zeros(1, 1, dtype=torch.long), torch.zeros(1, 1, dtype=torch.long), torch.zeros(1, 1), torch.zeros(1, 1), torch.tensor([0]))
+        off = T.shape[1] - n; sel = torch.tensor([off + i for i in keep])
+        return (T[:, sel], M[:, sel], C[:, sel], D[:, sel], torch.tensor([len(keep)]))
+    return drop(loc, idx_local), drop(glo, idx_global)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(); ap.add_argument("--run", required=True); ap.add_argument("--N", type=int, default=5); ap.add_argument("--n", type=int, default=50)
+    ap.add_argument("--steps", type=int, default=50); ap.add_argument("--seed", type=int, default=11); args = ap.parse_args(); set_seed(args.seed); rng = np.random.default_rng(args.seed)
+    model, ck = load_run(args.run)
+    df, X, cols = load_windows("", args.N, "validation", ck["config"]["model"]["scalar_groups"])
+    ds = WindowDataset(df, X, args.N, 256, 256, scaler=ck["scaler"])
+    scores = pd.read_parquet(RESULTS / "scores" / f"{args.run}_validation.parquet")
+    df = df.merge(scores[["unit", "t_ns", "score"]], on=["unit", "t_ns"], how="left")
+    thr = float(np.quantile(df.loc[df[f"label_{args.N}"] == 0, "score"], 0.99))           # 1 % FAR threshold on validation
+    tp = df[(df[f"label_{args.N}"] == 1) & (df["score"] > thr)].sort_values("score", ascending=False).head(args.n)
+    fp_hard = df[(df[f"label_{args.N}"] == 0) & df["has_nontarget_alert_local"] & (df["score"] > thr)].sort_values("score", ascending=False).head(args.n)
+    # the model rarely clears the 1 % FAR threshold, so also test the n highest-scoring windows of each label regardless of threshold
+    top_pos = df[(df[f"label_{args.N}"] == 1) & (df["n_local"] + df["n_global"] > 0)].sort_values("score", ascending=False).head(args.n)
+    top_neg = df[(df[f"label_{args.N}"] == 0) & (df["n_local"] + df["n_global"] > 0)].sort_values("score", ascending=False).head(args.n)
+    sets = {"true positives (above 1 % FAR threshold)": tp, "hard-negative false positives (above threshold)": fp_hard,
+            f"top-{args.n} scoring positives (any score)": top_pos, f"top-{args.n} scoring negatives (any score)": top_neg}
+    rows, gaps = [], []
+    for name, sub in sets.items():
+        for i in sub.index:
+            loc, glo, S, y = collate([ds[int(i)]]); ig = integrated_gradients(model, loc, glo, S, args.steps); gaps.append(ig["completeness_gap"])
+            base = ig["score"]; nl, ng = len(ig["attr_local"]), len(ig["attr_global"])
+            allattr = np.r_[ig["attr_local"], ig["attr_global"]]; order = np.argsort(-allattr)
+            for k in (1, 3, 5):
+                top = [j for j in order[:k] if allattr[j] > 0]
+                tl = [j for j in top if j < nl]; tg = [j - nl for j in top if j >= nl]
+                l2, g2 = delete_items(loc, glo, tl, tg); s_top = float(model.predict(l2, g2, S)[0][0]) if (tl or tg) else base
+                rnd = rng.choice(nl + ng, size=min(k, nl + ng), replace=False) if nl + ng else []
+                rl = [j for j in rnd if j < nl]; rg = [j - nl for j in rnd if j >= nl]
+                l3, g3 = delete_items(loc, glo, rl, rg); s_rnd = float(model.predict(l3, g3, S)[0][0]) if len(rnd) else base
+                rows.append({"set": name, "idx": int(i), "k": k, "score": base, "after_top_removal": s_top, "after_random_removal": s_rnd, "drop_top": base - s_top, "drop_random": base - s_rnd})
+    res = pd.DataFrame(rows); res.to_csv(RESULTS / "xai_perturbation.csv", index=False)
+    summ = res.groupby(["set", "k"]).agg(n=("idx", "size"), mean_score=("score", "mean"), drop_top=("drop_top", "mean"), drop_random=("drop_random", "mean"),
+                                       frac_top_bigger=("drop_top", lambda s: float((s.values > res.loc[s.index, "drop_random"].values).mean()))).round(4)
+    L = [f"# XAI perturbation check — {args.run}, N={args.N} (auto-generated)\n",
+         f"Integrated Gradients, {args.steps} steps, baseline = empty window (PAD embeddings, mean scalars). Completeness gap: mean {np.mean(gaps):.4f}, max |gap| {np.max(np.abs(gaps)):.4f} (logit units).",
+         f"Windows: {len(tp)} true positives and {len(fp_hard)} hard-negative false positives above the 1 % FAR threshold ({thr:.4f}) on validation; "
+         f"plus the {len(top_pos)} highest-scoring positives and {len(top_neg)} highest-scoring negatives regardless of threshold (non-empty windows).\n",
+         "Deleting the top-k positively attributed items vs deleting k random items (mean score drop; frac_top_bigger = share of windows where the attributed deletion hurt more):\n",
+         summ.to_markdown(), "\n**Reading guide:** if `drop_top` ≫ `drop_random` and `frac_top_bigger` is well above 0.5, the highlighted items genuinely drive the score. "
+         "A small gap means the model's decision is spread over many items (or is driven by the scalar context), which must be stated as a limitation."]
+    (RESULTS / "xai_perturbation.md").write_text("\n".join(L), encoding="utf-8")
+    groups = [(n, g) for n, g in res.groupby("set") if len(g)]; fig, ax = plt.subplots(1, max(len(groups), 1), figsize=(4.2 * max(len(groups), 1), 3.6), squeeze=False)
+    for a, (name, sub) in zip(ax[0], groups):
+        g = sub.groupby("k")[["drop_top", "drop_random"]].mean(); g.plot.bar(ax=a); a.set_title(name, fontsize=8); a.set_ylabel("mean score drop"); a.set_xlabel("items removed")
+    fig.tight_layout(); fig.savefig(RESULTS / "figures" / "xai_perturbation.png", dpi=140); print(summ.to_string()); print(f"[xai] → {RESULTS / 'xai_perturbation.md'}")
+
+
+if __name__ == "__main__":
+    main()

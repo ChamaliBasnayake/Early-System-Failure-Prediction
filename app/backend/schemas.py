@@ -20,6 +20,7 @@ class UnitResult(BaseModel):
     prediction_id: int; unit: str; score: float; mc_spread: Optional[float]; mc_samples: int
     alarm_at_far: dict; thresholds: dict; recommendation: str
     n_local: int; n_global: int; unk_rate_local: float; unk_rate_global: float; n_new_texts: int; out_of_distribution: bool
+    new_texts_embedded: int = 0; encoder: str = ""
     window_start: str; window_end: str; local_lines: list[LineOut]
 
 
