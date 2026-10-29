@@ -48,3 +48,11 @@ Q1 and Q3 reward documented data decisions.
 - **D6.4 Random-split and transductive-template controls are comparison-only** (`outcome=control` in the log) and never influence a model decision. The transductive control is additionally scored on test in Phase 7 because its effect is expected only where UNK is high.
 - **D6.5 Per-category table reports incident recall with the incident count** so that single-incident categories (KERNRTSP on validation) are not over-read.
 Findings: `docs/phase6_findings.md`.
+
+
+## Phase 7 — final test evaluation
+- **D7.1 One read of the test set**, two scripts (`evaluate_conditions.py --split test`, `gemini_eval.py --split test`), both guarded against a second run, both with inputs frozen on validation (models, thresholds, prompt, model name, thinking level). Tag `final-eval-v1`.
+- **D7.2 No post-hoc model changes.** The ANN's lack of history inputs is reported as the cause of its test shortfall, not repaired: adding history to the ANN and re-testing would be a second read. It is listed as future work with the validation-only evidence that motivated the original exclusion.
+- **D7.3 Post-hoc analysis is descriptive only** (`src/models/shift_analysis.py`): prevalence, repeat-failure rates, UNK rates per split. It trains nothing and is run after the tag.
+- **D7.4 The web application continues to serve the ANN** (the artefact the coursework assesses) and states the test results and the XGBoost comparison in its limitations panel; it does not silently switch to the better tabular model.
+Findings: `docs/phase7_findings.md`.

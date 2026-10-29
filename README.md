@@ -20,7 +20,7 @@ scheduling, instead of discovering the failure after it happens.
 | 3 Baselines | done |
 | 4 First neural model | done |
 | 5 Optimisation study | done |
-| 6 Generalisation experiments | in progress |
+| 6 Generalisation experiments | done |
 | 7 Final evaluation (test, once) | — |
 | 8 Explainable AI | in progress |
 | 9 Web application | in progress |
@@ -86,12 +86,14 @@ docker compose up --build                                # full stack: Postgres 
 powershell -ExecutionPolicy Bypass -File scripts\phase6_retrain.ps1     # or: Set-ExecutionPolicy -Scope Process Bypass; .\scripts\phase6_retrain.ps1
 python -m src.models.evaluate_conditions --split validation             # → results/validation_eval/, freezes results/thresholds_final.json
 # Phase 10 — Gemini as a predictor: prompt selection on VALIDATION (needs GEMINI_API_KEY user env var; new terminal)
-python -m src.genai.gemini_eval --split validation --prompts p1 --limit 10   # dry run: 10 calls
+python -m src.genai.gemini_eval --list-models                                # models available to this key
+python -m src.genai.gemini_eval --split validation --prompts p1 --limit 10   # dry run: 10 calls (default model gemini-3.8-flash; --model to change)
 python -m src.genai.gemini_eval --split validation                           # 4 prompts × 300 windows (cached; resumable)
 python -m src.genai.gemini_eval --select p2                                  # freeze the prompt chosen from results/genai/gemini_validation_N5.md
 # Phase 7 — THE single test evaluation (after Phase 10 prompt selection on validation)
 python -m src.genai.gemini_eval --split test                                 # selected prompt only; refuses to run twice
 python -m src.models.evaluate_conditions --split test                   # → results/test_eval/ (refuses to run twice)
+python -m src.models.shift_analysis                                     # post-hoc descriptive: why validation and test differ
 # Protocol controls (comparison only, never for model selection)
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
