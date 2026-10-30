@@ -1,9 +1,9 @@
 # Failure definition — FROZEN at the end of Phase 1. Any later change needs a row in docs/failure_definition.md.
 # Evidence: results/category_evidence.md and results/eda_alert_component_level.csv.
-target_category_patterns: ["^KERN"]   # kernel-level fatal events; APP* etc. are non-target (hard-negative pool)
+target_category_patterns: ["^KERN"]   # kernel-level fatal events; APP* etc. are non-target
 exclude_categories: [KERNMNTF, KERNMNT] # a KERN* category that proves informational can be listed here
 incident_gap_s: 60                    # same-category events anywhere in the system within 60 s = one cluster
 mass_incident_min_nodes: 32           # a cluster touching > 32 nodes (one node card) is a partition/job event, not a node fault → excluded
-burst_gap_s: 300                      # consecutive target events on one node within 300 s = one episode (valley of the alert-gap histogram)
+burst_gap_s: 300                      # consecutive target events on one node within 300 s = one episode
 support_gap_s: 300                    # target episodes system-wide within 300 s = one incident (unit for support and per-incident metrics)
 min_incidents_per_category: 30        # below this a category is reported as 'insufficient support'

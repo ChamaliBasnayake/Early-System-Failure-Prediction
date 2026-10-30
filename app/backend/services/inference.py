@@ -1,4 +1,4 @@
-"""Load checkpoints once; score a featurised window at request time (optionally with Monte-Carlo dropout)."""
+"""Load checkpoints once; score a featurised window at request time."""
 from __future__ import annotations
 
 import numpy as np

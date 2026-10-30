@@ -1,4 +1,4 @@
-# Phase 0 — Setup on Windows 11 (project on the E: drive)
+# Phase 0 — Setup on Windows 11
 
 Follow these steps once. Allow about two hours including downloads.
 

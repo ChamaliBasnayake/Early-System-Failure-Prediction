@@ -1,9 +1,9 @@
-# data (large) — reproduced by src/data/download.py
+# data
 data/raw/*
 data/interim/*
 !data/raw/.gitkeep
 !data/interim/.gitkeep
-# keep split definitions and the sample: they are small and part of the deliverable
+# keep split definitions and the sample
 !data/splits/
 !data/sample/
 
@@ -19,7 +19,7 @@ __pycache__/
 .venv/
 venv/
 
-# model checkpoints are large; the final ones are released separately
+# model checkpoints are large
 results/checkpoints/
 
 # node

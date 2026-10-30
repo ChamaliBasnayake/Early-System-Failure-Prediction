@@ -17,7 +17,7 @@ from app.backend.services.inference import ModelService
 router = APIRouter(prefix="/api")
 _feat: Featurizer | None = None; _svc: ModelService | None = None
 SCORE_MEANING = ("The score is the model's ranking signal for 'a kernel-level failure starts on this midplane within the lead time'. "
-                 "It is NOT a calibrated probability. 'Alarm at 1 %' means the score exceeds the validation threshold that produced about "
+                 "It is not a calibrated probability. 'Alarm at 1 %' means the score exceeds the validation threshold that produced about "
                  "14 false alarms per midplane per day; 'Alarm at 0.1 %' corresponds to about 1.4. The Monte-Carlo spread shows how much "
                  "the score moves when dropout is active; a large spread means an unstable score, not a confidence interval.")
 

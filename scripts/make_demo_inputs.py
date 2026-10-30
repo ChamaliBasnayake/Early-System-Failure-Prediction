@@ -1,4 +1,4 @@
-"""Prepare raw-log inputs for the web app demo / video from VALIDATION windows (test is reserved for Phase 7).
+"""Prepare raw-log inputs for the web app demo
 
 Writes to results/demo/: for the chosen run and N —
   tp_<unit>.log    the highest-scoring TRUE positive (a real failure followed)      → expected alarm

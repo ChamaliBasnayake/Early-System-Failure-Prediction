@@ -1,4 +1,4 @@
-# Final ANN — TwoChannelSemanticLSTM (`sem_final`): architecture record (Question 2.a)
+# Final ANN — TwoChannelSemanticLSTM (`sem_final`): architecture record
 
 ![architecture](../report/figures/architecture_sem_final.png)
 
@@ -27,7 +27,7 @@
 ## Design decisions with their evidence (Phase 5, validation only, seed 11; v1 seed spread ± 0.012)
 Depth: 1 vs 2 layers (0.0437 vs 0.0432). Width: 32 / 64 / 128 (0.0301 / 0.0437 / 0.0381). Normalisation: with vs without LayerNorm (0.0437 vs 0.0288, within noise; kept for stability). Regularisation: dropout 0.1 / 0.3 / 0.5 (0.0255 / 0.0437 / 0.0379). Pooling: last state vs mean+max (0.0437 vs 0.0411). Input representation: learned template embedding vs frozen text embedding (0.0437 single seed, **0.0305 ± 0.0115** over seeds vs **0.0322 ± 0.0004**). Loss weighting: none / √ratio / ratio (0.0277 / 0.0437 / 0.0326). The final configuration is the smallest one on the plateau whose input representation generalises to unseen messages.
 
-## Consistency with the decision (Q1 → Q2.a)
+## Consistency with the decision
 The output is a score for "a target kernel failure on this midplane starts in [t+N, t+N+10 min)". The administrator acts at a threshold fixed on validation at 1.4 or 14 false alarms per midplane-day; the loss weighting and the two operating points follow from the asymmetric costs identified in Q1. The web application labels the output a model score, shows the Monte-Carlo spread as an instability indicator, and states the final test result (PR-AUC 0.024 at prevalence 0.018, ROC 0.60) in its limitations panel.
 
 ## Training behaviour (learning curves)

@@ -10,26 +10,9 @@ baseline, a sequence neural network and a foundation model (Gemini).
 administrator drains or checkpoints the jobs on that node and removes it from
 scheduling, instead of discovering the failure after it happens.
 
-## Status
-
-| Phase | State |
-|---|---|
-| 0 Environment & repository | done |
-| 1 Data acquisition & EDA | done |
-| 2 Dataset construction & split | done |
-| 3 Baselines | done |
-| 4 First neural model | done |
-| 5 Optimisation study | done |
-| 6 Generalisation experiments | done |
-| 7 Final evaluation (test, once) | — |
-| 8 Explainable AI | in progress |
-| 9 Web application | in progress |
-| 10 Generative AI comparison | — |
-| 11 Report, video, presentation | — |
-
 ## Reproduce
 
-Windows setup (tools, E: drive layout, Docker disk location): see `docs/SETUP_WINDOWS.md`.
+Windows setup: see `docs/SETUP_WINDOWS.md`.
 
 ```bash
 conda env create -f environment.yml
@@ -43,17 +26,17 @@ python -m src.data.failure_set        # → data/interim/failure_episodes.parque
 python -m src.data.make_sample        # → data/sample/bgl_sample.log (20k lines, committed)
 python -m src.data.parse_bgl --sample && python -m src.data.eda --sample && python -m src.data.failure_set --sample
 
-# Phase 2 — dataset construction (one split, templates fitted on train only, windows with gap, leakage report)
+# Phase 2 — dataset construction
 python -m src.data.splits             # → data/splits/split_v1.json (+ rollA, rollB), results/split_report.md
 python -m src.data.templates          # → data/interim/drain_miner.pkl, templates.csv, events.parquet, results/template_report.md
 python -m src.data.windows            # → data/interim/windows.parquet, results/windows_summary.md, results/class_distribution.csv
 python -m src.data.leakage_checks     # → results/leakage_report.txt (exits non-zero on failure)
-python -m src.data.unk_diagnostics        # which messages are unseen after the training cut (software-upgrade finding)
+python -m src.data.unk_diagnostics        # which messages are unseen after the training cut
 python -m src.data.precursor_diagnostics  # is there log content before failures, and at which hardware level?
 python -m src.data.window_diagnostics     # content by class and channel
 python -m src.data.templates --transductive-control   # leaky protocol of prior work — CONTROL ONLY (outputs *_tc)
 
-# Phase 3 — baselines (validation only; every configuration appended to experiments/log.csv)
+# Phase 3 — baselines
 python -m src.features.build_features   # → data/interim/features.parquet
 python -m src.models.baselines          # trivial, confound LR, 25-config XGBoost search per N → results/baselines_validation.csv
 
@@ -61,7 +44,7 @@ python -m src.models.baselines          # trivial, confound LR, 25-config XGBoos
 python -m src.data.windows --unit system --tag system && python -m src.features.build_features --tag system --unit system
 python -m src.models.baselines --tag system --n_configs 10
 python -m src.models.feature_importance   # what the content model uses (template text, direction, group shares)
-# Phase 3c — local window length study (the lecturer-approved 4th hyperparameter): W_local = 1 h (primary), 6 h, 24 h
+# Phase 3c — local window length study: W_local = 1 h (primary), 6 h, 24 h
 python -m src.data.windows --local-window 360  --tag w6h  && python -m src.features.build_features --tag w6h  && python -m src.models.baselines --tag w6h  --n_configs 10
 python -m src.data.windows --local-window 1440 --tag w24h && python -m src.features.build_features --tag w24h && python -m src.models.baselines --tag w24h --n_configs 10
 # Phase 4 — first neural model (two-channel LSTM), three seeds, learning curves
@@ -97,21 +80,11 @@ python -m src.models.shift_analysis                                     # post-h
 python -m src.models.error_buckets --run-prefix sem_final --N 5         # error analysis by input type / data quality (validation) → docs/error_analysis.md
 python -m src.models.plot_curves --runs sem_final_N5_s11 sem_final_N5_s22 sem_final_N5_s33 --out sem_final_N5   # final-model learning curves
 python -m src.utils.apply_annotations                                   # apply experiments/annotations.csv (human 'learned' statements) to the log
-# Protocol controls (comparison only, never for model selection). The fitted control models are not retained in the repository
-# (results are in results/baselines_validation_{randomsplit,system,w6h,w24h}.csv); the commands below regenerate them. The transductive-template
-# models (_tc) are kept because the test-time control reads them. Rolling-origin splits (split_rollA/B) were defined in the plan but not evaluated: future work.
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
 python -m src.models.baselines --tag tc --n_configs 10                            # leaky transductive templates
 # same four with --sample to exercise the pipeline on the committed sample
 ```
-
-## Submission package
-`scripts\make_submission.ps1` builds the folder that is submitted: all code, configs, docs, results, tests, the 3 MB sample log with sample splits,
-plus the small runtime artefacts the application needs (`data/interim/{drain_miner.pkl, masked_messages.parquet, masked_embeddings_minilm.npy, templates.csv}`
-and the final checkpoints in `results/checkpoints/`). The raw 743 MB log is not shipped; `python -m src.data.download` fetches it (Zenodo, CC BY 4.0)
-and every pipeline step can be exercised on the sample with `--sample`. Phase 7 numbers are reproducible from the shipped checkpoints and scores with
-`python -m src.models.evaluate_conditions --split test` after deleting `results/test_eval/final_test_results.json` (the guard that enforces the single read).
 
 ## Repository layout
 
@@ -133,17 +106,7 @@ app/backend     FastAPI service      app/frontend  React (Vite) client
 report/         report source and figures
 ```
 
-## Project rules (from the coursework brief)
-
-1. One chronological train/validation/test split, created once in Phase 2 and reused by every model and the LLM.
-2. The test set is read by exactly one script (`src/models/evaluate_final.py`), run once, output committed.
-3. Every training/evaluation run appends a row to `experiments/log.csv` via `src.utils.runlog.log_run`.
-
 ## Dataset
 
 BlueGene/L logs from the Loghub collection (Zenodo DOI 10.5281/zenodo.8196385), CC BY 4.0.
 Cite: Zhu et al., "Loghub", ISSRE 2023; Oliner & Stearley, "What Supercomputers Say", DSN 2007.
-
-## AI-tool declaration
-
-See `docs/ai_tool_declaration.md` (to be completed; required by Section 7 of the brief).

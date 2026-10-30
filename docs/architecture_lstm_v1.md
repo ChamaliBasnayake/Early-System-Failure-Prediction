@@ -1,4 +1,4 @@
-# LSTM v1 — architecture record (Question 2.a)
+# LSTM v1 — architecture record
 
 ![architecture](../report/figures/architecture_lstm_v1.png)
 
@@ -30,7 +30,7 @@ and width (128, 256) are varied in the Phase 5 study with evidence rather than a
 5. Schedule and volume effects are handled by the scalar context, not expected to be discovered by the encoders.
 6. An empty channel is informative ("nothing logged") and is represented by a zero vector, not by padding noise.
 
-## Consistency with the decision (Q1 → Q2.a)
+## Consistency with the decision
 The output is a score for "a target failure on this midplane starts in [t+N, t+N+H)". The administrator acts at a
 threshold chosen on validation at a fixed false-alarm rate (1.4 or 14 alarms per midplane-day), because the cost of
 a false alarm (a needless drain) is bounded while a missed failure loses the jobs on the midplane. The class-weighted

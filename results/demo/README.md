@@ -8,4 +8,3 @@
 | neg_R31-M0.log | R31-M0 | 0 | 0.122 | uniform | — | 127 | no alarm |
 | thunderbird_ood.log | — | — | — | — | — | 2000 | out-of-distribution: different system, high unknown-template rate |
 
-For the demo: paste a file's content, select the midplane shown here, lead time N, and compare the app's decision with the label.

@@ -1,4 +1,4 @@
-"""SQLAlchemy models: every prediction and every piece of administrator feedback is stored."""
+"""Every prediction and every piece of administrator feedback is stored."""
 from __future__ import annotations
 
 from datetime import datetime, timezone

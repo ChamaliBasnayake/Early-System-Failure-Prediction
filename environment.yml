@@ -1,4 +1,4 @@
-# Reproducible environment for the BGL failure-prediction project (CPU only).
+# Reproducible environment for the BGL failure-prediction project.
 # Create with:  conda env create -f environment.yml
 # Activate:     conda activate bgl
 name: bgl
