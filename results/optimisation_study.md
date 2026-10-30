@@ -101,3 +101,4 @@ All runs: N = 5 min, seed 11 unless stated, selected/evaluated on VALIDATION onl
 ## Notes
 
 The interpretation of every study (effect size vs the ±0.012 seed spread, mechanism, optimiser behaviour, unsuccessful runs) is written in `docs/phase5_findings.md`; per-run statements are in `experiments/log.csv` (column `learned`).
+- Choose the final configuration and justify; then run it for 3 seeds and all N.
