@@ -1,112 +1,86 @@
-# Early Failure Prediction from System Logs (BlueGene/L)
+# Early failure prediction from system logs (IBM BlueGene/L)
 
-A leakage-controlled benchmark for predicting compute-node failures from the
-minutes of log messages that precede them, with generalisation tests to unseen
-failure types and unseen machines, and a fair comparison of a tuned classical
-baseline, a sequence neural network and a foundation model (Gemini).
+**User:** the HPC system administrator. **Decision:** when a midplane (512 nodes) is flagged, withhold it from the next
+job allocation and checkpoint/drain the jobs running on it. **Task:** from the last 60 minutes of log lines, score the
+risk that a kernel-level failure starts on a midplane 1, 5, 15 or 30 minutes ahead.
 
-**User:** a system administrator operating a high-performance computing cluster.
-**Decision:** when the model predicts a failure within the next N minutes, the
-administrator drains or checkpoints the jobs on that node and removes it from
-scheduling, instead of discovering the failure after it happens.
+Dataset: BlueGene/L RAS log (Loghub, Zenodo 10.5281/zenodo.8196385, CC BY 4.0), 4.75 M lines, 2005-06-03 → 2006-01-04.
+The raw 743 MB file is not included: `python -m src.data.download` fetches it; `data/sample/bgl_sample.log` (3 MB) lets
+every step run with `--sample`.
 
-## Reproduce
+## Folder layout
+```
+app/        web application: FastAPI backend (app/backend) + React frontend (app/frontend)
+configs/    all settings: failure definition, windows, Drain template miner, model configs
+data/       sample log, the single chronological split (split_v1.json), runtime artefacts in data/interim (see below)
+experiments/log.csv          every training/evaluation run (491 rows); annotations.csv = reviewed "what was learned" notes
+results/    numbers and figures produced by the scripts (see "Results map")
+scripts/    PowerShell batch scripts for the long runs; demo-input generator
+src/        all code: data pipeline, features, baselines, neural models, XAI, Gemini evaluation
+tests/      pytest suite (one file per phase)
+```
 
-Windows setup: see `docs/SETUP_WINDOWS.md`.
-
-```bash
+## Set up (Windows, Anaconda)
+```powershell
 conda env create -f environment.yml
 conda activate bgl
-pytest -q                         # Phase 0 smoke tests
-# Phase 1 — data
-python -m src.data.download           # BGL.zip from Zenodo, MD5 check, unzip (~700 MB)
-python -m src.data.parse_bgl          # → data/interim/bgl_parsed.parquet
-python -m src.data.eda                # → results/eda_summary.md + results/figures/eda_*.png
-python -m src.data.failure_set        # → data/interim/failure_episodes.parquet + results/failure_set_summary.md
-python -m src.data.make_sample        # → data/sample/bgl_sample.log (20k lines, committed)
-python -m src.data.parse_bgl --sample && python -m src.data.eda --sample && python -m src.data.failure_set --sample
-
-# Phase 2 — dataset construction
-python -m src.data.splits             # → data/splits/split_v1.json (+ rollA, rollB), results/split_report.md
-python -m src.data.templates          # → data/interim/drain_miner.pkl, templates.csv, events.parquet, results/template_report.md
-python -m src.data.windows            # → data/interim/windows.parquet, results/windows_summary.md, results/class_distribution.csv
-python -m src.data.leakage_checks     # → results/leakage_report.txt (exits non-zero on failure)
-python -m src.data.unk_diagnostics        # which messages are unseen after the training cut
-python -m src.data.precursor_diagnostics  # is there log content before failures, and at which hardware level?
-python -m src.data.window_diagnostics     # content by class and channel
-python -m src.data.templates --transductive-control   # leaky protocol of prior work — CONTROL ONLY (outputs *_tc)
-
-# Phase 3 — baselines
-python -m src.features.build_features   # → data/interim/features.parquet
-python -m src.models.baselines          # trivial, confound LR, 25-config XGBoost search per N → results/baselines_validation.csv
-
-# Phase 3b — where does predictability live? SYSTEM-level variant (label: any target failure in the horizon)
-python -m src.data.windows --unit system --tag system && python -m src.features.build_features --tag system --unit system
-python -m src.models.baselines --tag system --n_configs 10
-python -m src.models.feature_importance   # what the content model uses (template text, direction, group shares)
-# Phase 3c — local window length study: W_local = 1 h (primary), 6 h, 24 h
-python -m src.data.windows --local-window 360  --tag w6h  && python -m src.features.build_features --tag w6h  && python -m src.models.baselines --tag w6h  --n_configs 10
-python -m src.data.windows --local-window 1440 --tag w24h && python -m src.features.build_features --tag w24h && python -m src.models.baselines --tag w24h --n_configs 10
-# Phase 4 — first neural model (two-channel LSTM), three seeds, learning curves
-python -m src.models.train --config configs/lstm_v1.yaml --seed 11
-python -m src.models.train --config configs/lstm_v1.yaml --seed 22
-python -m src.models.train --config configs/lstm_v1.yaml --seed 33
-python -m src.models.plot_curves --runs lstm_v1_N5_s11 lstm_v1_N5_s22 lstm_v1_N5_s33 --out lstm_v1_N5
-# Phase 5 — optimisation study (overnight batch; ~24 runs; validation only) + variants
-python -m src.models.embed_messages                       # frozen MiniLM embeddings for every masked text (semantic variant)
-powershell -ExecutionPolicy Bypass -File scripts\phase5_study.ps1
-python -m src.models.study_summary                        # → results/optimisation_study.md + results/figures/study_*.png
-# Phase 8 — explainable AI (Integrated Gradients; validated by perturbation; incorrect-prediction cases)
-python -m src.xai.perturbation --run sem_final_N5_s11 --n 50       # → results/xai_perturbation.md + figures/xai_perturbation.png
-python -m src.xai.cases --run sem_final_N5_s11                     # → results/xai_cases.md (write your interpretations in)
-python scripts/make_demo_inputs.py --run sem_final_N5_s11          # → results/demo/*.log for the app demo and video
-# Phase 9 — web application (development mode: SQLite; production: docker compose with PostgreSQL)
-uvicorn app.backend.main:app --reload --port 8000        # backend, from the project root (loads Drain state + checkpoint once)
-cd app/frontend && npm install && npm run dev            # frontend at http://localhost:5173 (proxies /api to :8000)
-pytest -q tests/test_phase9.py                           # API tests (normal, invalid, empty, unknown midplane, feedback, history)
-docker compose up --build                                # full stack: Postgres + backend (:8000) + nginx frontend (:8080)
-# Phase 6 — generalisation experiments (validation) and protocol controls
-powershell -ExecutionPolicy Bypass -File scripts\phase6_retrain.ps1     # or: Set-ExecutionPolicy -Scope Process Bypass; .\scripts\phase6_retrain.ps1
-python -m src.models.evaluate_conditions --split validation             # → results/validation_eval/, freezes results/thresholds_final.json
-# Phase 10 — Gemini as a predictor: prompt selection on VALIDATION (needs GEMINI_API_KEY user env var; new terminal)
-python -m src.genai.gemini_eval --list-models                                # models available to this key
-python -m src.genai.gemini_eval --split validation --prompts p1 --limit 10   # dry run: 10 calls (default model gemini-3.8-flash; --model to change)
-python -m src.genai.gemini_eval --split validation                           # 4 prompts × 300 windows (cached; resumable)
-python -m src.genai.gemini_eval --select p2                                  # freeze the prompt chosen from results/genai/gemini_validation_N5.md
-# Phase 7 — THE single test evaluation (after Phase 10 prompt selection on validation)
-python -m src.genai.gemini_eval --split test                                 # selected prompt only; refuses to run twice
-python -m src.models.evaluate_conditions --split test                   # → results/test_eval/ (refuses to run twice)
-python -m src.models.shift_analysis                                     # post-hoc descriptive: why validation and test differ
-python -m src.models.error_buckets --run-prefix sem_final --N 5         # error analysis by input type / data quality (validation) → docs/error_analysis.md
-python -m src.models.plot_curves --runs sem_final_N5_s11 sem_final_N5_s22 sem_final_N5_s33 --out sem_final_N5   # final-model learning curves
-python -m src.utils.apply_annotations                                   # apply experiments/annotations.csv (human 'learned' statements) to the log
-python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
-python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
-python -m src.models.baselines --tag tc --n_configs 10                            # leaky transductive templates
-# same four with --sample to exercise the pipeline on the committed sample
+pytest --basetemp=E:\pytest-temp          # 34 tests
 ```
+`scripts\setup_windows.ps1` does the same plus Node and Docker checks.
 
-## Repository layout
-
+## Reproduce, in order
+```powershell
+python -m src.data.download                       # 1  raw log (or use --sample everywhere below)
+python -m src.data.parse_bgl                      # 2  parse to parquet
+python -m src.data.eda                            # 3  EDA figures/statistics
+python -m src.data.failure_set                    # 4  target failures (configs/failure_definition.yaml)
+python -m src.data.splits                         # 5  one chronological split 60/20/20 by incidents
+python -m src.data.templates                      # 6  Drain templates fitted on TRAIN only
+python -m src.data.windows                        # 7  60-min two-channel windows + labels per lead time
+python -m src.data.leakage_checks                 # 8  leakage report
+python -m src.features.build_features             # 9  tabular features
+python -m src.models.baselines                    # 10 trivial, confound, XGBoost (25 random configs), ablations
+python -m src.models.train --config configs/lstm_v1.yaml --seed 11      # 11 initial ANN (repeat seeds 22, 33)
+python -m src.models.embed_messages               # 12 frozen MiniLM embeddings of every message text
+.\scripts\phase5_study.ps1                        # 13 optimisation study (22 runs, validation only)
+.\scripts\phase5_final.ps1                        # 14 final ANN, 3 seeds × 4 lead times
+.\scripts\phase6_retrain.ps1                      # 15 held-out-category / held-out-rack models, protocol controls
+python -m src.models.evaluate_conditions --split validation             # 16 all models on validation; freezes thresholds
+python -m src.genai.gemini_eval --split validation; python -m src.genai.gemini_eval --select p2   # 17 prompt selection
+python -m src.models.evaluate_conditions --split test                   # 18 THE single test evaluation
+python -m src.genai.gemini_eval --split test                            # 19 Gemini on the same test windows
+python -m src.xai.perturbation --run sem_final_N5_s11 --n 50; python -m src.xai.cases --run sem_final_N5_s11   # 20 XAI
+python -m src.models.error_buckets; python -m src.models.shift_analysis # 21 error analysis
+python scripts\make_demo_inputs.py --run sem_final_N5_s11              # 22 demo inputs for the app
 ```
-configs/        experiment and pipeline configuration (YAML / INI)
-data/raw        BGL.log — downloaded by src/data/download.py (git-ignored)
-data/interim    parsed tables, templates, windows (git-ignored)
-data/splits     chronological split definitions (committed)
-data/sample     ~20k-line representative sample so the code can be tested
-docs/           failure_definition.md, eda_findings.md, preprocessing.md, design_decisions.md
-src/data        download, parse, templates, windows, splits, leakage checks
-src/models      baselines, lstm, cnn, train, evaluate_final
-src/xai         integrated gradients, perturbation checks
-src/genai       Gemini evaluation and prompts
-src/utils       seeds, run log, metrics, paths
-experiments/    log.csv — THE experiment log (every run, including failures)
-results/        metrics, curves, figures, final_test_results.json
-app/backend     FastAPI service      app/frontend  React (Vite) client
-report/         report source and figures
+Steps 18–19 refuse to run twice. Gemini needs the `GEMINI_API_KEY` environment variable (never stored in the repo).
+
+## Run the application
+```powershell
+uvicorn app.backend.main:app --port 8000          # backend (loads the final model and the Drain state once)
+cd app\frontend; npm install; npm run dev         # frontend at http://localhost:5173
+docker compose up --build                         # or the full stack: Postgres + backend + frontend at :8080
 ```
+Runtime artefacts the app reads (produced by steps 6, 7, 12, 14; included in the submission folder):
+`data/interim/drain_miner.pkl`, `masked_messages.parquet`, `masked_embeddings_minilm.npy`, `templates.csv`,
+`results/checkpoints/sem_final_N{1,5,15,30}_s11.pt`. Demo inputs: `results/demo/` (true positive, missed failure,
+alert-rich negative, quiet negative, invalid text, Thunderbird out-of-distribution log).
 
-## Dataset
+## Results map
+| Question | Where |
+|---|---|
+| EDA, failure set, leakage | `results/figures/eda_*.png`, `results/leakage_report.txt`, `results/class_distribution.csv` (full statistics regenerated by steps 3–8) |
+| Baselines and controls | `results/baselines_validation*.csv` (`_randomsplit`, `_tc`, `_system`, `_w6h`, `_w24h` are comparison-only controls) |
+| ANN training | `results/curves/*.json`, `results/figures/curves_*.png`, `results/optimisation_study.md`, `results/figures/study_*.png` |
+| Validation (all models, all conditions) | `results/validation_eval/` |
+| **Final test (single run)** | `results/test_eval/conditions_test.md`, `final_test_results.json`, `shift_analysis.md` |
+| Error analysis | `results/error_buckets.md`, `results/test_eval/shift_analysis.md` |
+| XAI | `results/xai_perturbation.md`, `results/xai_cases.md`, `results/figures/xai_perturbation.png` |
+| Gemini | `results/genai/gemini_validation_N5.md`, `gemini_test_N5.md`, per-window CSVs, `selected_prompt.json`, `src/genai/prompts/` |
+| Every run | `experiments/log.csv` (phase, change, hyper-parameters, validation result, what was learned, outcome) |
 
-BlueGene/L logs from the Loghub collection (Zenodo DOI 10.5281/zenodo.8196385), CC BY 4.0.
-Cite: Zhu et al., "Loghub", ISSRE 2023; Oliner & Stearley, "What Supercomputers Say", DSN 2007.
+## Rules followed
+One split for everything; templates, thresholds, prompts and all model choices fixed on train/validation only; the test
+set read once by steps 18–19; seeds 11/22/33 with mean ± sd reported; XGBoost tuned with 25 random configurations
+against 22 ANN study runs; unsuccessful runs kept in the log (`outcome = unsuccessful`). AI-tool use is declared in the
+report appendix.

@@ -1,7 +1,0 @@
-{
-  "input": "E:\\Projects\\bgl-failure-prediction\\data\\sample\\bgl_sample.log",
-  "output": "E:\\Projects\\bgl-failure-prediction\\data\\interim\\bgl_parsed_sample.parquet",
-  "lines_total": 20000,
-  "lines_malformed_dropped": 0,
-  "lines_kept": 20000
-}
