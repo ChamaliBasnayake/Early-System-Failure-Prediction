@@ -94,10 +94,12 @@ python -m src.genai.gemini_eval --select p2                                  # f
 python -m src.genai.gemini_eval --split test                                 # selected prompt only; refuses to run twice
 python -m src.models.evaluate_conditions --split test                   # → results/test_eval/ (refuses to run twice)
 python -m src.models.shift_analysis                                     # post-hoc descriptive: why validation and test differ
-python -m src.models.error_buckets --run-prefix sem_final --N 5         # error analysis by input type / data quality (validation)
+python -m src.models.error_buckets --run-prefix sem_final --N 5         # error analysis by input type / data quality (validation) → docs/error_analysis.md
 python -m src.models.plot_curves --runs sem_final_N5_s11 sem_final_N5_s22 sem_final_N5_s33 --out sem_final_N5   # final-model learning curves
 python -m src.utils.apply_annotations                                   # apply experiments/annotations.csv (human 'learned' statements) to the log
-# Protocol controls (comparison only, never for model selection)
+# Protocol controls (comparison only, never for model selection). The fitted control models are not retained in the repository
+# (results are in results/baselines_validation_{randomsplit,system,w6h,w24h}.csv); the commands below regenerate them. The transductive-template
+# models (_tc) are kept because the test-time control reads them. Rolling-origin splits (split_rollA/B) were defined in the plan but not evaluated: future work.
 python -m src.models.baselines --random-split-control --n_configs 10              # leaky random window split
 python -m src.data.windows --events _tc --tag tc && python -m src.features.build_features --tag tc --templates _tc
 python -m src.models.baselines --tag tc --n_configs 10                            # leaky transductive templates

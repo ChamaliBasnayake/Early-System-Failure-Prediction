@@ -1,41 +1,123 @@
 import { useEffect, useState } from 'react'
-import { Alert, AppBar, Box, Container, Paper, Stack, Tab, Tabs, Toolbar, Typography } from '@mui/material'
 import PredictForm from './components/PredictForm'
 import ResultCard from './components/ResultCard'
 import HistoryTable from './components/HistoryTable'
-import { api, type HistoryRow, type PredictResponse } from './lib/api'
+import { getModelInfo, getHistory, predict, type HistoryRow, type PredictResponse } from './lib/api'
+
+type Page = 'predict' | 'history' | 'about'
 
 export default function App() {
-  const [tab, setTab] = useState(0); const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null)
-  const [res, setRes] = useState<PredictResponse | null>(null); const [hist, setHist] = useState<HistoryRow[]>([]); const [model, setModel] = useState<any>(null)
-  const [lastReq, setLastReq] = useState<{ log: string; N: number } | null>(null)
-  useEffect(() => { api.model().then(setModel).catch(() => setModel(null)) }, [])
-  useEffect(() => { if (tab === 1) api.history().then(setHist).catch(e => setErr(String(e.message))) }, [tab])
-  const submit = async (log: string, unit: string | null, N: number, mc: number | null) => {
-    setBusy(true); setErr(null)
-    try { setRes(await api.predict(log, unit, N, mc)); setLastReq({ log, N }) } catch (e: any) { setErr(e.message) } finally { setBusy(false) }
+  const [page, setPage] = useState<Page>('predict')
+  const [modelInfo, setModelInfo] = useState<any>(null)
+  const [result, setResult] = useState<PredictResponse | null>(null)
+  const [lastLog, setLastLog] = useState('')
+  const [lastLeadTime, setLastLeadTime] = useState(5)
+  const [history, setHistory] = useState<HistoryRow[]>([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [showLimits, setShowLimits] = useState(false)
+
+  // Ask the backend which model is loaded, once at start-up.
+  useEffect(() => {
+    getModelInfo().then(setModelInfo).catch(() => setModelInfo(null))
+  }, [])
+
+  // Reload the history table every time the user opens that page.
+  useEffect(() => {
+    if (page === 'history') {
+      getHistory().then(setHistory).catch(e => setError(e.message))
+    }
+  }, [page])
+
+  async function handlePredict(logText: string, unit: string | null, leadTime: number, mcSamples: number | null) {
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await predict(logText, unit, leadTime, mcSamples)
+      setResult(response)
+      setLastLog(logText)
+      setLastLeadTime(leadTime)
+    } catch (e: any) {
+      setError(e.message)
+    } finally {
+      setBusy(false)
+    }
   }
-  return (<>
-    <AppBar position="static"><Toolbar><Typography variant="h6">BGL early failure prediction</Typography><Box flex={1} /><Typography variant="body2">{model?.version ?? 'backend offline'}</Typography></Toolbar></AppBar>
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}><Tab label="Predict" /><Tab label="History" /><Tab label="About the model" /></Tabs>
-      {err && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErr(null)}>{err}</Alert>}
-      {tab === 0 && <Stack spacing={3}>
-        <Paper sx={{ p: 2 }}><PredictForm onSubmit={submit} busy={busy} units={res?.units_detected ?? []} /></Paper>
-        {res && <>
-          <Alert severity={res.fallback_lead_time ? 'warning' : 'info'}>Scored {res.results.length} midplane(s) in {res.latency_ms.toFixed(0)} ms with <b>{res.model_run}</b> at lead time {res.lead_time_used} min{res.fallback_lead_time && <> (no model for {res.lead_time_requested} min yet — fallback)</>}. Parsed {res.n_parsed} of {res.n_input_lines} lines ({res.n_malformed} malformed).</Alert>
-          <Alert severity="info" icon={false}><b>What the score means.</b> {res.score_meaning}</Alert>
-          {res.results.map(r => <ResultCard key={r.prediction_id} r={r} onFeedback={(id, ok) => api.feedback(id, ok).catch(e => setErr(e.message))} onExplain={(u) => api.explain(lastReq!.log, u, lastReq!.N)} />)}
-          <Paper variant="outlined" sx={{ p: 2 }}><Typography variant="subtitle2" gutterBottom>Limitations</Typography><ul style={{ margin: 0 }}>{res.limitations.map((l, i) => <li key={i}><Typography variant="body2">{l}</Typography></li>)}</ul></Paper>
-        </>}
-      </Stack>}
-      {tab === 1 && <Paper sx={{ p: 2 }}><HistoryTable rows={hist} /></Paper>}
-      {tab === 2 && <Paper sx={{ p: 2 }}>{model ? <>
-        <Typography variant="subtitle1" gutterBottom>{model.version}</Typography>
-        <Typography variant="body2" paragraph>{model.score_meaning}</Typography>
-        <Typography variant="subtitle2">Loaded checkpoints</Typography><pre style={{ fontSize: 12 }}>{JSON.stringify(model.models, null, 2)}</pre>
-        <Typography variant="subtitle2">Limitations</Typography><ul>{model.limitations.map((l: string, i: number) => <li key={i}><Typography variant="body2">{l}</Typography></li>)}</ul>
-      </> : <Typography>Backend offline.</Typography>}</Paper>}
-    </Container>
-  </>)
+
+  return (
+    <>
+      <header>
+        <h1>BlueGene/L early failure prediction</h1>
+        <span>{modelInfo ? modelInfo.version : 'backend offline'}</span>
+      </header>
+
+      <main>
+        <nav>
+          <button className={page === 'predict' ? 'active' : ''} onClick={() => setPage('predict')}>Predict</button>
+          <button className={page === 'history' ? 'active' : ''} onClick={() => setPage('history')}>History</button>
+          <button className={page === 'about' ? 'active' : ''} onClick={() => setPage('about')}>About the model</button>
+        </nav>
+
+        {error && <div className="error">{error}</div>}
+
+        {page === 'predict' && (
+          <>
+            <div className="box">
+              <PredictForm onSubmit={handlePredict} busy={busy} units={result ? result.units_detected : []} />
+            </div>
+
+            {result && (
+              <>
+                <div className="info">
+                  Scored {result.results.length} midplane(s) for failures starting {result.lead_time_used} minutes ahead
+                  ({result.n_parsed} of {result.n_input_lines} lines understood, {result.latency_ms.toFixed(0)} ms).
+                  {result.fallback_lead_time && <b> No model for {result.lead_time_requested} min — the closest one was used.</b>}
+                </div>
+
+                {result.results.map(r => (
+                  <ResultCard key={r.prediction_id} result={r} logText={lastLog} leadTime={lastLeadTime} />
+                ))}
+
+                <div className="box">
+                  <button className="small" onClick={() => setShowLimits(!showLimits)}>
+                    {showLimits ? 'Hide' : 'Show'} model limitations
+                  </button>
+                  {showLimits && (
+                    <ul>
+                      {result.limitations.map((text, i) => <li key={i}>{text}</li>)}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+          </>
+        )}
+
+        {page === 'history' && (
+          <div className="box">
+            <HistoryTable rows={history} />
+          </div>
+        )}
+
+        {page === 'about' && (
+          <div className="box">
+            {modelInfo ? (
+              <>
+                <h3>{modelInfo.version}</h3>
+                <p>{modelInfo.score_meaning}</p>
+                <h3>Loaded checkpoints</h3>
+                <pre style={{ fontSize: 12 }}>{JSON.stringify(modelInfo.models, null, 2)}</pre>
+                <h3>Limitations</h3>
+                <ul>
+                  {modelInfo.limitations.map((text: string, i: number) => <li key={i}>{text}</li>)}
+                </ul>
+              </>
+            ) : (
+              <p>Backend offline.</p>
+            )}
+          </div>
+        )}
+      </main>
+    </>
+  )
 }
