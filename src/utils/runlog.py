@@ -37,7 +37,7 @@ COLUMNS = [
     "train_time_s", "infer_ms_per_window", "outcome", "learned",
 ]
 
-ALLOWED_OUTCOMES = {"success", "failed", "control", "pending"}
+ALLOWED_OUTCOMES = {"success", "failed", "control", "pending", "unsuccessful"}   # unsuccessful = ran to completion but did not improve / degraded (brief §6)
 ALLOWED_SPLITS = {"train", "validation", "test"}
 
 

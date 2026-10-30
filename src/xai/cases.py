@@ -48,13 +48,15 @@ def main() -> None:
     picks = {"Case 1 — false positive on a HARD negative (alert-rich window, no failure followed)": df[(df[lab] == 0) & df["has_nontarget_alert_local"]].sort_values("score", ascending=False).head(1),
              "Case 2 — false positive on an ordinary negative": df[(df[lab] == 0) & (df["anchor"] == "uniform")].sort_values("score", ascending=False).head(1),
              "Case 3 — false negative (a real failure the model scored lowest)": df[df[lab] == 1].sort_values("score").head(1),
+             "Case 4 — false negative WITH log activity on the midplane (lowest-scoring positive whose local channel is not empty)": df[(df[lab] == 1) & (df["n_local"] > 0)].sort_values("score").head(1),
              "Contrast — true positive (highest-scoring real failure)": df[df[lab] == 1].sort_values("score", ascending=False).head(1)}
     L = [f"# Incorrect-prediction case studies — {args.run}, N={args.N} (auto-generated; interpretations to be written by hand)\n",
          f"1 % FAR threshold on validation: {thr:.4f}. Attributions: Integrated Gradients ({args.steps} steps) relative to an empty window.\n"]
     for title, sub in picks.items():
         if sub.empty: L.append(f"## {title}\n(no window in this category)\n"); continue
         i = int(sub.index[0]); r = df.loc[i]; loc, glo, S, y = collate([ds[i]]); ig = integrated_gradients(model, loc, glo, S, args.steps)
-        L.append(f"## {title}\nmidplane **{r['unit']}**, window end {pd.to_datetime(r['t_ns'], utc=True)}, label {int(r[lab])}, anchor {r['anchor']}, category {r['category'] or '—'}, "
+        verdict = ("INCORRECT at the 1 % FAR threshold" if (int(r[lab]) == 1) != (float(r["score"]) > thr) else "correct at the 1 % FAR threshold") + f" (score {float(r['score']):.3f} vs {thr:.3f})"
+        L.append(f"## {title}\n**{verdict}.** midplane **{r['unit']}**, window end {pd.to_datetime(r['t_ns'], utc=True)}, label {int(r[lab])}, anchor {r['anchor']}, category {r['category'] or '—'}, "
                  f"local items {len(r['tpl_local'])} ({r['n_local']} raw lines), global items {len(r['tpl_global'])} ({r['n_global']} raw lines), UNK local {r['n_unk_local']} / global {r['n_unk_global']}\n")
         L += describe(ig, r, mm, tpl, cols); L.append("")
     L.append("## Limitations of the method (state these in the report)\n- Attribution measures sensitivity along one path from an EMPTY baseline; it is not a causal claim.\n"

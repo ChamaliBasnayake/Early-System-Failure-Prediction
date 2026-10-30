@@ -1,0 +1,52 @@
+match,kind,outcome,learned
+20261025-092554_lstm_N5,prefix,success,"lstm_v1 seed 11: PR-AUC 0.0437 (best of the three seeds), ROC 0.668, best epoch 10; validation loss minimum at epoch 3 — PR-AUC peaks after the loss minimum, so early stopping on loss would have stopped too early; the metric, not the loss, is the right stopping signal for a 1 % prevalence problem."
+20261025-094658_lstm_N5,prefix,success,"lstm_v1 seed 22: PR-AUC 0.0226, best epoch 4. Same configuration, half the PR-AUC of seed 11 → seed variance (sd 0.012) is as large as most hyper-parameter effects; nothing below ±0.012 can be claimed as an improvement."
+20261025-101531_lstm_N5,prefix,success,"lstm_v1 seed 33: PR-AUC 0.0253. Three-seed mean 0.0305 ± 0.0115; ROC stable 0.64–0.67 while PR-AUC varies — the ranking of the bulk is stable, the ranking of the few top windows is not."
+lr_1e-4_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: lr 1e-4 → PR-AUC 0.0213, ROC 0.545, best epoch 1 of 6: with 10× smaller steps the model barely moved from initialisation before patience expired; under-trained, not over-regularised (train loss still falling). Lower learning rate needs a longer patience/epoch budget we did not have on CPU."
+lr_3e-4_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: lr 3e-4 → 0.0201, ROC 0.557, best epoch 1: same under-training pattern as 1e-4; confirms the default 1e-3 sits at the low end of the usable range for this budget."
+lr_3e-3_N5_s11,exact,success,"lr 3e-3 → 0.0278, ROC 0.676: within seed noise of v1; higher ROC, lower PR-AUC — faster steps give a similar bulk ranking but a noisier top of the ranking."
+lr_1e-2_N5_s11,exact,success,"lr 1e-2 → 0.0225, ROC 0.673: expected to diverge, did not — Adam's per-parameter normalisation plus LayerNorm kept training stable at 10× the default lr. Expectation recorded as wrong; PR-AUC at the bottom of the seed band."
+bs_32_N5_s11,exact,success,"batch 32 → 0.0266 (within noise), 2.2× slower per epoch (2902 s). Noisier gradients did not help; recall@1 % FAR 0.062 is the highest in the lr/batch studies, suggesting slightly different top-ranking but no net gain."
+bs_512_N5_s11,exact,success,"batch 512 → 0.0294 (within noise); 4446 s because fewer, larger steps need more epochs (best epoch 14). Batch size is not a lever here."
+layers_2_N5_s11,exact,success,"2 LSTM layers (137,513 params) → 0.0432, ROC 0.655: equal to v1 seed 11 (0.0437) at 1.9× the parameters and 1.8× the time. Depth does not add signal; the 60-minute sequence has little hierarchical structure to exploit."
+hidden_32_N5_s11,exact,success,"hidden 32 (33,065 params) → 0.0301, ROC 0.661: within noise of v1 at half the parameters — capacity is not the bottleneck."
+hidden_128_N5_s11,exact,success,"hidden 128 (195,881 params) → 0.0381, ROC 0.666, 6045 s: no gain for 2.8× parameters and 4× time; train loss lower, val loss higher (0.3308) → the extra capacity goes into fitting noise."
+pool_meanmax_N5_s11,exact,success,"mean+max pooling over time → 0.0411, ROC 0.649: within noise of last-state pooling; order-insensitive pooling loses nothing, consistent with the finding that WHICH messages appear matters more than their order."
+drop_0.1_N5_s11,exact,success,"dropout 0.1 → 0.0255, ROC 0.678: less regularisation, higher ROC, lower PR-AUC; val loss minimum earlier (epoch 3) — mild over-fitting of the top of the ranking."
+drop_0.5_N5_s11,exact,success,"dropout 0.5 → 0.0379, ROC 0.642, recall@1 % 0.073 (highest in the study): heavier regularisation trades bulk ranking (ROC) for the head of the ranking. Within noise on the primary metric."
+no_layernorm_N5_s11,exact,success,"LayerNorm removed → 0.0288, ROC 0.677: within noise. The [embedding ‖ log count ‖ log Δt] scales are already comparable after log1p, so normalisation is not critical here; kept for stability at high lr (see lr 1e-2)."
+sgd_0.01_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: SGD+momentum lr 0.01 → 0.0218, ROC 0.645, best epoch 20 of 25 and still improving: without adaptive step sizes the rarely-updated embedding rows and the gate biases learn slowly; needs far more epochs than the CPU budget allows."
+sgd_0.1_N5_s11,exact,unsuccessful,"UNSUCCESSFUL on the operating point: SGD lr 0.1 → ROC 0.694 (best ROC of the whole study) but PR-AUC 0.0217 and recall@1 % FAR = 0: SGD learned the bulk ranking well but never pushed any positive into the top 1 % of scores — large uniform steps flatten the score distribution. Illustrates why PR-AUC, not ROC, is the primary metric."
+adamw_wd1e-2_N5_s11,exact,success,"AdamW wd 1e-2 → 0.0305, ROC 0.663: decoupled weight decay behaves like Adam here (within noise); the model is small and dropout already regularises."
+posw_1_N5_s11,exact,success,"pos_weight 1 (no class weighting) → 0.0277, ROC 0.683: within noise; the val loss (0.0655) is not comparable with weighted runs. Class weighting is not needed for ranking metrics with Adam, only for threshold behaviour."
+posw_ratio_N5_s11,exact,success,"pos_weight = full ratio (~65) → 0.0326, ROC 0.671: expected to over-fire (saturated scores) — it did not; scores shift up but the ranking is unchanged. Expectation recorded as wrong."
+w6h_w6h_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: 6-hour local window → 0.0205, ROC 0.647, best epoch 2: longer history adds no precursor information (the failing unit is silent before most failures) while diluting the recent lines; early stop after 2 epochs = nothing learnable beyond v1."
+w24h_w24h_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: 24-hour local window → 0.0210, best epoch 1: same as 6 h; confirms the signal is in the last hour and in the machine-wide channel, not in the unit's longer history."
+cnn_v1_N5_s11,exact,unsuccessful,"UNSUCCESSFUL: 1-D CNN (kernels 3/5/7 × 64, masked max-pool) → 0.0234, ROC 0.601 — the worst architecture; it reached best epoch 20 of 25 and was still slowly improving. Local n-gram patterns over collapsed items carry less than the LSTM's whole-window state; max-pooling discards the repeat-count/Δt context."
+sem_v1_N5_s11,exact,success,"Frozen MiniLM text embeddings → 0.0327, ROC 0.677: within noise of v1 on seed 11 but selected as the final model on MECHANISM before the test (it can represent messages never seen in training; 61 % of test lines are unseen). Later shown to reduce seed variance 0.0115 → 0.0004."
+sem_final_N5_s11,exact,success,"Final model, seed 11 (identical configuration to sem_v1_N5_s11; the second identical row is a duplicate from re-launching scripts/phase5_final.ps1). Three-seed mean 0.0322 ± 0.0004 — far more stable than the template LSTM."
+sem_final_N5_s22,exact,success,Final model seed 22: 0.0322 — within 0.0005 of seed 11; the frozen embedding removes the embedding-initialisation variance.
+sem_final_N5_s33,exact,success,Final model seed 33: 0.0318; three-seed sd 0.0004.
+sem_final_N1_s11,exact,success,Final model N=1: 0.0297 / 0.0297 / 0.0260 over seeds; at 1 min lead the model is slightly below N=5 — the signal is not sharper closer to the failure.
+sem_final_N1_s22,exact,success,see N=1 seed 11 note.
+sem_final_N1_s33,exact,success,see N=1 seed 11 note.
+sem_final_N15_s11,exact,unsuccessful,"UNSUCCESSFUL training run: N=15 seed 11 stopped at best epoch 1 of 6 with PR-AUC 0.0170 (≈ prevalence 0.012 × 1.4) — the run never left the initial plateau; seeds 22/33 reached 0.0366 / 0.0212. N=15 is the least stable lead time (sd 0.010). Reported as mean ± sd, not cherry-picked."
+sem_final_N15_s22,exact,success,N=15 seed 22: 0.0366 (best of the three); see seed 11 note on instability.
+sem_final_N15_s33,exact,success,N=15 seed 33: 0.0212; see seed 11 note.
+sem_final_N30_s11,exact,success,N=30: 0.0460 / 0.0351 / 0.0388 — the highest PR-AUC of any lead time but prevalence is also highest (0.0166) and ROC lowest (0.56–0.60): the gain over chance is smallest at 30 min.
+sem_final_N30_s22,exact,success,see N=30 seed 11 note.
+sem_final_N30_s33,exact,success,see N=30 seed 11 note.
+lstm_v1_N1_s11,exact,success,"Initial ANN at N=1 for the earliness curve: 0.0236, ROC 0.685."
+lstm_v1_N15_s11,exact,success,"Initial ANN at N=15: 0.0292, ROC 0.585."
+lstm_v1_N30_s11,exact,success,"Initial ANN at N=30: 0.0329, ROC 0.616."
+sem_final_noKERNMC_N5_s11,exact,success,"Trained without KERNMC positives: on KERNMC windows it ranks as well as the all-category model (validation PR-AUC on KERNMC 0.0123 vs 0.0137; test 0.0118 vs 0.0192, recall 0.079 = 0.079) → the usable signal is generic ambient state, not a KERNMC signature."
+sem_final_noKERNRTSP_N5_s11,exact,success,"Trained without KERNRTSP: the single validation KERNRTSP incident drops from 0.249 to 0.007 PR-AUC → a type-specific precursor that does not transfer; one incident only, so a hypothesis, not a finding."
+sem_final_noKERNSOCK_N5_s11,exact,success,Trained without KERNSOCK: on test it predicts KERNSOCK as well as or better than the all-category model (0.0122 vs 0.0063; recall 0.077 vs 0) → generic signal again.
+sem_final_noKERNDTLB_N5_s11,exact,success,Trained without KERNDTLB: not evaluable — 0 validation and 2 test incidents.
+sem_final_rackout_N5_s11,exact,success,"20 % of racks held out of training: on the never-seen racks PR-AUC 0.067 / ROC 0.649 (validation), 0.0134 / 0.706 (test) vs the all-rack model 0.024 / 0.671 and 0.0138 / 0.678 → no penalty for unseen hardware."
+FINAL TEST,contains,,Single test read (tag final-eval-v1); interpreted in docs/phase7_findings.md; thresholds frozen from validation.
+prompt selection,contains,,Gemini prompt-selection run on validation (Phase 10); p2 selected by the pre-registered rule (best ROC); all four prompts rank below chance — the LLM reads silence as health (docs/phase10_findings.md).
+"reference, N=",contains,control,Constant-score reference: PR-AUC equals prevalence by construction; the floor every model is compared with.
+baseline confound_lr,contains,,"Content-free confound (time-of-day, day-of-week, volume): ROC 0.53–0.56 on validation, 0.50–0.61 on test — above trivial, far below content models → the content models are not learning the schedule."
+baseline xgboost_content,contains,,"Ablation: content only (no history) — validation ROC 0.58–0.67; on test it still beats the ANN (ROC 0.64–0.73), so the ANN's test shortfall is not only the missing history input."
+baseline xgboost_history_only,contains,,Ablation: failure-history only — at/below chance on validation (ROC 0.43–0.52) but ROC 0.68–0.74 on test: the validation period had unusually little failure recurrence (shift_analysis.md); the single most consequential finding for why the ANN (built without history) lost on test.

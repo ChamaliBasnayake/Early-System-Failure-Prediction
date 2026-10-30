@@ -71,9 +71,7 @@ def main() -> None:
             fig.tight_layout(); fn = "study_" + study.replace(" / ", "_").replace(" ", "_").replace("(", "").replace(")", "") + ".png"; fig.savefig(RESULTS / "figures" / fn, dpi=140)
             L.append(f"![]({'figures/' + fn})\n")
         plt.close(fig)
-    L.append("## Notes to write (by hand, from the evidence above)\n- For each study: what moved, by how much relative to the seed spread of v1 (±0.012), and the mechanism.\n"
-             "- Optimisers: relate Adam vs SGD vs AdamW behaviour to adaptive step sizes, momentum and decoupled weight decay.\n"
-             "- Failed/degraded runs (expected: lr 1e-2, pos_weight ratio, possibly layers_2/hidden_128 over-fitting): diagnose from the curves.\n"
+    L.append("## Notes\n\nThe interpretation of every study (effect size vs the ±0.012 seed spread, mechanism, optimiser behaviour, unsuccessful runs) is written in `docs/phase5_findings.md`; per-run statements are in `experiments/log.csv` (column `learned`).\n"
              "- Choose the final configuration and justify; then run it for 3 seeds and all N.")
     (RESULTS / "optimisation_study.md").write_text("\n".join(L), encoding="utf-8"); print(f"[study] → {RESULTS / 'optimisation_study.md'}")
 

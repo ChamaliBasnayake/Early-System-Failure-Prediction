@@ -98,8 +98,6 @@ All runs: N = 5 min, seed 11 unless stated, selected/evaluated on VALIDATION onl
 
 ![](figures/study_seeds_v1.png)
 
-## Notes to write (by hand, from the evidence above)
-- For each study: what moved, by how much relative to the seed spread of v1 (±0.012), and the mechanism.
-- Optimisers: relate Adam vs SGD vs AdamW behaviour to adaptive step sizes, momentum and decoupled weight decay.
-- Failed/degraded runs (expected: lr 1e-2, pos_weight ratio, possibly layers_2/hidden_128 over-fitting): diagnose from the curves.
-- Choose the final configuration and justify; then run it for 3 seeds and all N.
+## Notes
+
+The interpretation of every study (effect size vs the ±0.012 seed spread, mechanism, optimiser behaviour, unsuccessful runs) is written in `docs/phase5_findings.md`; per-run statements are in `experiments/log.csv` (column `learned`).
