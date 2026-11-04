@@ -1,12 +1,6 @@
 """Apply reviewed human annotations to experiments/log.csv (idempotent; never deletes the automatic text).
 
-experiments/annotations.csv columns: match, kind, outcome, learned
-  match   = run_id (exact) or a prefix of run_id (kind=prefix) or a substring of purpose/key_hyperparams (kind=contains)
-  outcome = optional new outcome (success | unsuccessful | failed | control)
-  learned = the human statement; appended as " | note: ..." unless already present
-Rows of the Phase 3 random search (25 XGBoost configurations per N) get a computed note: rank within the sweep and the
-distance to the sweep's best configuration, so every row states what was learned from that configuration.
-Usage: python -m src.utils.apply_annotations            (then git diff experiments/log.csv to review)
+Usage: python -m src.utils.apply_annotations           
 """
 from __future__ import annotations
 
@@ -63,12 +57,12 @@ def main() -> None:
                 if "random-search configuration" not in r["learned"]: r["learned"] = (r["learned"] + " | " if r["learned"] else "") + note
         for r in blk:
             if r["model_family"] != "xgboost" and "note:" not in r["learned"] and label.startswith(("CONTROL", "PROTOCOL", "window-length")):
-                r["learned"] = (r["learned"] + " | " if r["learned"] else "") + f"note: [{label}] — comparison only; see docs/phase6_findings.md / results/baselines_validation*.csv."
+                r["learned"] = (r["learned"] + " | " if r["learned"] else "") + f"note: [{label}] — comparison only; see the results/baselines_validation*.csv."
             elif r["model_family"] != "xgboost" and "note:" not in r["learned"]:
                 r["learned"] = (r["learned"] + " | " if r["learned"] else "") + f"note: [{label}]."
     for r in rows:                                           # test / GenAI rows
-        if r["phase"] == "7" and "note:" not in r["learned"]: r["learned"] += " | note: single test read (tag final-eval-v1), thresholds frozen from validation; interpreted in docs/phase7_findings.md."
-        if r["phase"] == "10" and "note:" not in r["learned"]: r["learned"] += " | note: prompt-selection run on validation; p2 chosen by the pre-registered rule; see docs/phase10_findings.md."
+        if r["phase"] == "7" and "note:" not in r["learned"]: r["learned"] += " | note: single test read (tag final-eval-v1), thresholds frozen from validation; interpreted in the report (Question 3, test results)."
+        if r["phase"] == "10" and "note:" not in r["learned"]: r["learned"] += " | note: prompt-selection run on validation; p2 chosen by the pre-registered rule; see the report (Question 6)."
     with LOG_PATH.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS); w.writeheader(); w.writerows(rows)
     auto_only = sum(1 for r in rows if "note:" not in r["learned"])

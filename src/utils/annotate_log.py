@@ -1,4 +1,4 @@
-"""Append your own interpretation to the `learned` field of an experiment-log row (never overwrites the automatic text).
+"""Append an interpretation to the `learned` field of an experiment-log row (never overwrites the automatic text).
 
 Usage: python -m src.utils.annotate_log --run lstm_v1_N5_s11 --note "Validation loss minimum at epoch 3; PR-AUC peak at epoch 10 is a single-epoch spike; ..."
        python -m src.utils.annotate_log --contains lstm --N 5 --seed 11 --phase 4 --note "..."   (filter by family/N/seed/phase)

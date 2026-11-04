@@ -1,12 +1,4 @@
 """Window → tensor dataset for the sequence models.
-
-Each window has two channels (local, global). A channel is a sequence of items
-(template_index, masked_text_id, repeat_count, seconds_since_previous). Per step the
-template models feed [embedding(template), log1p(count), log1p(dt)]; the semantic model
-feeds [projection(pretrained_text_embedding[masked_id]), log1p(count), log1p(dt)].
-Sequences are right-aligned and padded with 0 to the batch's longest length; lengths are
-kept for masking/packing so padded positions never influence the encoders.
-A small scalar context vector (time + volume features) is concatenated after pooling.
 """
 from __future__ import annotations
 

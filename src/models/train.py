@@ -1,8 +1,5 @@
 """Phase 4/5 — train a sequence model from a YAML config; evaluate on VALIDATION every epoch.
 
-Saves: results/checkpoints/<name>_N<N>_s<seed>.pt, results/curves/<run_id>.json (per-epoch train loss,
-validation loss, validation PR-AUC), results/scores/<name>_N<N>_s<seed>_validation.parquet (per-window
-scores for error analysis / XAI), and one experiment-log row with what was changed and what was learned.
 Usage: python -m src.models.train --config configs/lstm_v1.yaml [--seed 22] [--N 5] [--tag w24h] [--name lr_3e-4]
        [--set train.lr=0.0003 --set model.hidden=128]   (override any config key; recorded in the log)
        [--purpose "..."] [--changed "..."] [--phase 5]

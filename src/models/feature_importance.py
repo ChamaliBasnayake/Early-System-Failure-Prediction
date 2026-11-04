@@ -1,9 +1,5 @@
 """Phase 3 analysis — what does the XGBoost content model actually use?
 
-Reads results/models/xgboost_content_N{N}.joblib (and the full model), takes gain-based importances,
-maps count features back to template text (cl_i = local channel, cg_i = global channel) and writes
-results/feature_importance.md. Also reports, for the top local/global templates, the mean log-count
-in positive vs negative validation windows so the DIRECTION of each effect is visible.
 Usage: python -m src.models.feature_importance [--tag w24h] [--N 5] [--top 25]
 """
 from __future__ import annotations
@@ -41,8 +37,7 @@ def main() -> None:
             L.append(pd.DataFrame(rows, columns=["feature", "gain", "mean in positives", "mean in negatives"]).to_markdown(index=False) + "\n")
             share = {g: float(imp[imp.index.isin(groups[g])].sum() / imp.sum()) for g in ("time", "volume", "summary", "history", "counts_local", "counts_global") if g in groups}
             L.append("Share of total gain by feature group: " + ", ".join(f"{k} {v:.1%}" for k, v in share.items()) + "\n")
-    (RESULTS / f"feature_importance{sfx}.md").write_text("\n".join(L), encoding="utf-8")
-    print("\n".join(L[:40])); print(f"[importance] → {RESULTS / f'feature_importance{sfx}.md'}")
+    print("\n".join(L[:40]))
 
 
 if __name__ == "__main__":

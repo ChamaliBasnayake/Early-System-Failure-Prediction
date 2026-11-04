@@ -11,6 +11,7 @@ type Props = {
 export default function ResultCard({ result, logText, leadTime }: Props) {
   const [feedback, setFeedback] = useState<boolean | null>(null)
   const [explanation, setExplanation] = useState<Explanation | null>(null)
+  const [showExplanation, setShowExplanation] = useState(false)
   const [explaining, setExplaining] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,15 +20,21 @@ export default function ResultCard({ result, logText, leadTime }: Props) {
   //   1 % FAR   ≈ 14 false alarms per midplane per day   -> "Attention"
   const alarm = result.alarm_at_far['0.001']
   const attention = result.alarm_at_far['0.01']
-  const level = alarm ? 'alarm' : attention ? 'attention' : ''
+  const level = alarm ? 'alarm' : attention ? 'attention' : 'ok'
   const label = alarm ? 'ALARM' : attention ? 'Attention' : 'No alarm'
-  const percent = Math.min(100, Math.round(result.score * 100))
+  const attentionAt = result.thresholds['0.01'] ?? 0
+  const alarmAt = result.thresholds['0.001'] ?? 0
 
   async function handleExplain() {
+    if (explanation) {                 // already fetched: just show / hide it
+      setShowExplanation(!showExplanation)
+      return
+    }
     setExplaining(true)
     setError(null)
     try {
       setExplanation(await explain(logText, result.unit, leadTime))
+      setShowExplanation(true)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -41,48 +48,64 @@ export default function ResultCard({ result, logText, leadTime }: Props) {
   }
 
   return (
-    <div className={`box result ${level}`}>
-      <div>
-        <b style={{ fontSize: 18 }}>Midplane {result.unit}</b>
-        <span className={`badge ${level}`}>{label}</span>
-        {result.out_of_distribution && <span className="badge grey">input unlike training data</span>}
+    <section className={`panel result result-${level}`}>
+      <div className="result-head">
+        <div>
+          <span className="eyebrow">Midplane</span>
+          <h2>{result.unit}</h2>
+        </div>
+        <div className="badges">
+          {result.out_of_distribution && <span className="badge badge-grey">Input unlike training data</span>}
+          <span className={`badge badge-${level}`}>{label}</span>
+        </div>
       </div>
 
-      <p style={{ margin: '10px 0 2px' }}>
-        Risk score <b>{result.score.toFixed(2)}</b> out of 1
-        {result.mc_spread !== null && <span className="muted"> &nbsp;(stability ±{result.mc_spread.toFixed(2)})</span>}
-      </p>
-      <div className="bar"><div style={{ width: `${percent}%` }} /></div>
-      <p className="muted" style={{ marginTop: 2 }}>
-        Attention above {result.thresholds['0.01']?.toFixed(2)}, alarm above {result.thresholds['0.001']?.toFixed(2)}.
-        The score ranks risk; it is not a probability.
-      </p>
+      <div className="result-body">
+        <div className="score">
+          <span className="score-value">{result.score.toFixed(2)}</span>
+          <span className="score-label">risk score (0–1)</span>
+          {result.mc_spread !== null && <span className="score-label">stability ±{result.mc_spread.toFixed(2)}</span>}
+        </div>
 
-      <p><b>Recommendation:</b> {result.recommendation}</p>
-
-      <p className="muted">
-        Last 60 minutes: {result.n_local} lines from this midplane, {result.n_global} from the whole machine;
-        {' '}{(result.unk_rate_global * 100).toFixed(0)} % of messages were never seen in training.
-      </p>
+        <div className="score-detail">
+          {/* bar with the two thresholds marked on it */}
+          <div className="meter">
+            <div className={`meter-fill meter-${level}`} style={{ width: `${Math.min(100, result.score * 100)}%` }} />
+            <div className="meter-mark" style={{ left: `${attentionAt * 100}%` }} title="Attention threshold" />
+            <div className="meter-mark meter-mark-alarm" style={{ left: `${alarmAt * 100}%` }} title="Alarm threshold" />
+          </div>
+          <div className="meter-legend">
+            <span>Attention above {attentionAt.toFixed(2)} (~14 false alarms / day)</span>
+            <span>Alarm above {alarmAt.toFixed(2)} (~1.4 / day)</span>
+          </div>
+          <p className="recommendation"><b>Recommendation:</b> {result.recommendation}</p>
+          <p className="muted small">
+            The score ranks risk; it is not a probability. Last 60 minutes: {result.n_local} lines from this midplane,
+            {' '}{result.n_global} from the whole machine; {(result.unk_rate_global * 100).toFixed(0)} % of messages never seen in training.
+          </p>
+        </div>
+      </div>
 
       {result.out_of_distribution && (
-        <div className="warning">
+        <div className="alert alert-warning">
           Most of these messages are unknown to the model (or the window is empty), so the score is not reliable here.
         </div>
       )}
 
-      <div className="row">
-        <button className="small" disabled={explaining} onClick={handleExplain}>
-          {explaining ? 'Explaining…' : explanation ? 'Refresh explanation' : 'Explain this score'}
+      <div className="result-actions">
+        <button className="btn btn-secondary" disabled={explaining} onClick={handleExplain}>
+          {explaining ? 'Explaining…' : showExplanation ? 'Hide explanation' : 'Explain this score'}
         </button>
-        <span style={{ marginLeft: 'auto' }} className="muted">Was this prediction correct?</span>
-        <button className={`small ${feedback === true ? 'selected' : ''}`} onClick={() => handleFeedback(true)}>Yes</button>
-        <button className={`small ${feedback === false ? 'selected' : ''}`} onClick={() => handleFeedback(false)}>No</button>
+        <div className="feedback">
+          <span className="muted">Was this prediction correct?</span>
+          <button className={`btn btn-chip ${feedback === true ? 'chip-yes' : ''}`} onClick={() => handleFeedback(true)}>Yes</button>
+          <button className={`btn btn-chip ${feedback === false ? 'chip-no' : ''}`} onClick={() => handleFeedback(false)}>No</button>
+        </div>
       </div>
 
-      {error && <div className="error" style={{ marginTop: 10 }}>{error}</div>}
+      {error && <div className="alert alert-error">{error}</div>}
 
-      {explanation && <ExplainView explanation={explanation} />}
-    </div>
+      {explanation && showExplanation && <ExplainView explanation={explanation} />}
+    </section>
   )
 }

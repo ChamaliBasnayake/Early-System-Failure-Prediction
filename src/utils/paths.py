@@ -9,7 +9,6 @@ DATA_SAMPLE = ROOT / "data" / "sample"
 CONFIGS = ROOT / "configs"
 RESULTS = ROOT / "results"
 EXPERIMENTS = ROOT / "experiments"
-DOCS = ROOT / "docs"
 
 for _p in (DATA_RAW, DATA_INTERIM, DATA_SPLITS, DATA_SAMPLE, RESULTS, EXPERIMENTS):
     _p.mkdir(parents=True, exist_ok=True)

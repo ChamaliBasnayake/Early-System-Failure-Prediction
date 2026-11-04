@@ -1,23 +1,5 @@
 """Phase 1, step 2 — parse the raw BGL log into a typed table (Parquet).
 
-Each BGL line has nine whitespace-separated metadata fields followed by the
-free-text message:
-
-    <AlertTag> <Epoch> <Date> <Node> <DateTime> <NodeRepeat> <Type> <Component> <Level> <Message…>
-
-Example (normal line; AlertTag is "-"):
-    - 1117838570 2005.06.03 R02-M1-N0-C:J12-U11 2005-06-03-15.42.50.363779 R02-M1-N0-C:J12-U11 RAS KERNEL INFO instruction cache parity error corrected
-Example (alert line; AlertTag is the category):
-    KERNDTLB 1117869872 2005.06.04 R23-M0-NE-C:J05-U01 2005-06-04-00.24.32.… R23-M0-NE-C:J05-U01 RAS KERNEL FATAL data TLB error interrupt
-
-Design notes (document these in docs/preprocessing.md):
-* We split on whitespace with maxsplit=9 so the message keeps its internal spaces.
-* Lines with fewer than 9 metadata fields are counted as malformed and dropped; the
-  count is printed and saved — it is a data-quality fact for Q1.
-* `is_alert` = AlertTag != "-".  Nothing else is derived here; the failure
-  definition is made separately and explicitly in src/data/failure_set.py.
-* Output is written in chunks with pyarrow so a 4.7M-line file fits in modest RAM.
-
 Usage:
     python -m src.data.parse_bgl                       # data/raw/BGL.log → data/interim/bgl_parsed.parquet
     python -m src.data.parse_bgl --sample              # data/sample/bgl_sample.log → data/interim/bgl_parsed_sample.parquet

@@ -1,9 +1,4 @@
 """Post-hoc DESCRIPTIVE analysis of the validation→test shift (run AFTER final-eval-v1; trains nothing, changes nothing).
-
-Question it answers: why did failure-history features flip from useless on validation (ROC 0.43–0.52) to strong on test
-(ROC 0.68–0.74), and why did the ANN (built without history inputs) not transfer?
-Outputs results/test_eval/shift_analysis.md: per split — prevalence, positive windows on units with a target failure in the
-previous 24 h / 7 d, incidents per failing unit, share of positives from the top-5 units, UNK rate, lines/hour, category mix.
 """
 from __future__ import annotations
 

@@ -1,22 +1,10 @@
 """Phase 10 (validation: prompt selection) / Phase 7 (test, ONCE) — Gemini as a zero-/few-shot failure predictor.
 
-Protocol
-  * A fixed, seeded, balanced sample of windows per split (results/genai/sample_<split>.parquet): up to 150 positives
-    stratified by failure category + 100 uniform negatives + 50 hard negatives, at N=5 by default.
-  * Every window is rendered as text from the SAME two channels the ANN sees (masked/templated lines, repeat counts,
-    relative times); nothing the ANN cannot see is given to the LLM, and nothing the LLM sees is hidden from the ANN.
-  * Four prompt designs (src/genai/prompts/): zero-shot, domain-context, few-shot (examples from TRAIN only), structured.
-    Fixed seed, explicit thinking level, JSON output {"probability", "reason"}. Every response is cached (results/genai/cache/) so re-runs are
-    free and the test run is reproducible; model name, date, tokens and latency are recorded.
-  * The final ANN (mean of 3 seeds) and the best XGBoost are scored on the IDENTICAL sample so the comparison is fair.
-  * Prompt selection uses --split validation only. --split test runs ONLY the prompt named in
-    results/genai/selected_prompt.json, and refuses to run twice.
-Key: environment variable GEMINI_API_KEY (never in code or config). Transport: plain HTTPS (httpx) to the Interactions API.
 Usage:
   python -m src.genai.gemini_eval --list-models                      # which models this key can use
   python -m src.genai.gemini_eval --split validation                 # all prompts, 300 windows
   python -m src.genai.gemini_eval --split validation --prompts p1 --limit 20   # cheap dry run first
-  python -m src.genai.gemini_eval --select p2                        # freeze the chosen prompt (after reading the report)
+  python -m src.genai.gemini_eval --select p2                        # freeze the chosen prompt
   python -m src.genai.gemini_eval --split test                       # Phase 7 only
 """
 from __future__ import annotations
@@ -231,7 +219,7 @@ def main() -> None:
     split, N = args.split, args.N
     all_prompts = sorted(p.stem for p in PROMPT_DIR.glob("p*.txt")); short = {p.split("_")[0]: p for p in all_prompts}
     if split == "test":
-        if not sel_path.exists(): raise SystemExit("No selected prompt. Run validation, read the report, then: python -m src.genai.gemini_eval --select pX")
+        if not sel_path.exists(): raise SystemExit("No selected prompt. Run validation, then: python -m src.genai.gemini_eval --select pX")
         if (OUT / f"gemini_test_N{N}.md").exists(): raise SystemExit("Test evaluation already exists — the test set is evaluated ONCE.")
         sel = json.loads(sel_path.read_text()); prompts = [short[sel["prompt"]]]
         if sel.get("model") and sel["model"] != model_name: raise SystemExit(f"Prompt was selected with {sel['model']}; the test run must use the same model (pass --model {sel['model']}).")

@@ -1,6 +1,6 @@
 # Window / label construction (Phase 2, v2 — unit-level, two-channel). FROZEN once windows.parquet is built.
 #
-# Why v2: precursor diagnostics (results/precursor_diagnostics.md) showed that before a node failure the node
+# Why v2: precursor diagnostics showed that before a node failure the node
 # itself has logged nothing in 90–97 % of cases, its midplane in 66 %, while the SYSTEM is active in ~90 %
 # with elevated volume (median 83 vs 12 lines/hour). So the prediction unit is the MIDPLANE (the unit BGL
 # allocates jobs by) and every window has two channels: the unit's own lines and the whole system's lines.

@@ -1,19 +1,5 @@
 """Phase 3, step 0 — tabular features from windows (for the classical baselines and the confound baseline).
 
-Feature groups (all computable at prediction time t; nothing after t is used):
-  time      hour-of-day (sin, cos, US/Pacific), day-of-week one-hot, weekend flag           → confound baseline
-  volume    n_local, n_global, log1p of both, n_units_active_global, distinct templates      → confound baseline
-  counts    template-count vectors, local and global (vocab = train templates + UNK)         → content models
-  summary   UNK counts/fractions, non-target alerts, other units' failure lines, Δt stats,
-            burstiness (max repeat count)                                                    → content models
-  history   FAILURE HISTORY known at t: hours since the unit's last target failure (capped at 7 d),
-            unit failures in the last 6 h / 24 h / 7 d, hours since the last system-wide incident,
-            system incidents in the last 6 h / 24 h, mass incidents in the last 24 h,
-            non-target alerts on the unit in the last 24 h                                   → history models
-  Content vs. history is a deliberate ablation (Q3): failures cluster in space and time, and the
-  question is how much log CONTENT adds beyond that clustering.
-Outputs: data/interim/features.parquet (one row per window; meta columns kept for joining),
-         data/interim/feature_groups.json
 Usage:   python -m src.features.build_features [--sample]
 """
 from __future__ import annotations

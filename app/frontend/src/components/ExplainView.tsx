@@ -4,8 +4,8 @@ import type { Explanation } from '../lib/api'
 // Red = pushed the score up (towards failure), blue = pulled it down. Stronger colour = bigger effect.
 function colour(attribution: number, max: number) {
   const strength = Math.min(1, Math.abs(attribution) / (max || 1))
-  const alpha = 0.15 + 0.65 * strength
-  return attribution >= 0 ? `rgba(220, 60, 60, ${alpha})` : `rgba(60, 120, 220, ${alpha})`
+  const alpha = 0.10 + 0.55 * strength
+  return attribution >= 0 ? `rgba(214, 69, 61, ${alpha})` : `rgba(52, 112, 178, ${alpha})`
 }
 
 export default function ExplainView({ explanation }: { explanation: Explanation }) {
@@ -29,28 +29,30 @@ export default function ExplainView({ explanation }: { explanation: Explanation 
   const share = (x: number) => `${(100 * Math.abs(x) / total).toFixed(0)} %`
 
   return (
-    <div style={{ marginTop: 12 }}>
-      <p className="muted">
-        Red lines pushed the score up, blue lines pulled it down. Without any log lines the score would be {explanation.baseline_score.toFixed(2)}.
-      </p>
+    <div className="explain">
+      <div className="explain-legend">
+        <span><i className="swatch swatch-up" /> pushed the score up</span>
+        <span><i className="swatch swatch-down" /> pulled it down</span>
+        <span className="muted">Without any log lines the score would be {explanation.baseline_score.toFixed(2)}.</span>
+      </div>
 
       <h3>Messages from this midplane</h3>
       {explanation.lines.length === 0 ? (
-        <p className="muted">This midplane logged nothing in the last 60 minutes. The score comes from machine-wide messages and the time/volume context.</p>
+        <p className="empty-note">This midplane logged nothing in the last 60 minutes. The score comes from machine-wide messages and the time/volume context.</p>
       ) : (
         <div className="scroll">
           <table>
             <thead>
-              <tr><th>time</th><th>message</th><th>effect</th></tr>
+              <tr><th>Time</th><th>Message</th><th className="num">Effect</th></tr>
             </thead>
             <tbody>
               {explanation.lines.map((line, i) => {
                 const effect = effectOfLine(line.item)
                 return (
                   <tr key={i} style={{ background: line.item === null ? undefined : colour(effect, maxLocal) }}>
-                    <td>{new Date(line.timestamp).toLocaleTimeString()}</td>
+                    <td className="nowrap">{new Date(line.timestamp).toLocaleTimeString()}</td>
                     <td className="mono">{line.message.slice(0, 120)}{line.template_index === 1 ? ' [unknown type]' : ''}</td>
-                    <td>{line.item === null ? '' : (effect >= 0 ? '+' : '') + effect.toFixed(2)}</td>
+                    <td className="num">{line.item === null ? '' : (effect >= 0 ? '+' : '') + effect.toFixed(2)}</td>
                   </tr>
                 )
               })}
@@ -61,28 +63,26 @@ export default function ExplainView({ explanation }: { explanation: Explanation 
 
       <h3>Machine-wide messages that raised the score most</h3>
       {topGlobal.length === 0 ? (
-        <p className="muted">None.</p>
+        <p className="empty-note">None.</p>
       ) : (
         <table>
           <tbody>
             {topGlobal.map(item => (
               <tr key={item.item} style={{ background: colour(item.attribution, maxGlobal) }}>
                 <td className="mono">{item.text.slice(0, 110)}</td>
-                <td>×{item.count}</td>
-                <td>+{item.attribution.toFixed(2)}</td>
+                <td className="num">×{item.count}</td>
+                <td className="num">+{item.attribution.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      <p style={{ marginTop: 10 }}>
-        <button className="small" onClick={() => setShowDetails(!showDetails)}>
-          {showDetails ? 'Hide' : 'Show'} technical details
-        </button>
-      </p>
+      <button className="btn btn-ghost" onClick={() => setShowDetails(!showDetails)}>
+        {showDetails ? 'Hide' : 'Show'} technical details
+      </button>
       {showDetails && (
-        <p className="muted">
+        <p className="tech">
           Method: Integrated Gradients, {explanation.steps} steps, baseline = empty window. Completeness gap {explanation.completeness_gap.toFixed(3)} logits
           (how much of the score change the attributions fail to account for). Share of attribution: this midplane {share(explanation.sum_local)},
           machine-wide {share(explanation.sum_global)}, time/volume context {share(explanation.sum_scalars)}.

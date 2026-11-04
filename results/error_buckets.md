@@ -65,4 +65,4 @@ Frozen 1 % FAR threshold 0.4100. 'PR-AUC / prevalence' is the lift over a consta
 ## Reading
 - If the EMPTY-local bucket has PR-AUC/prevalence near 1 and the non-empty bucket well above 1, the model's whole signal lives in windows where the midplane itself logged something; the empty bucket is the irreducible-error regime (no input).
 - A FAR that is lower on hard negatives than on uniform negatives means the model is not an alert-chaser.
-- UNK buckets on validation are small (2.8 % UNK overall); the test-period effect of UNK (66 %) is in docs/phase7_findings.md F7.4.
+- UNK buckets on validation are small (2.8 % UNK overall); the test-period effect of UNK (66 %) is in the report (Question 3, test results).

@@ -1,12 +1,5 @@
 """Evaluation metrics used by EVERY model (classical, neural, LLM). NumPy only.
 
-Primary metric: average precision (PR-AUC) — threshold-free, prevalence-aware, appropriate for a
-~1.5 % positive rate where ROC-AUC would look flattering.
-Operating-point metrics: recall (and precision, F1) at fixed FALSE-ALARM RATES on the negative
-windows. Negatives are uniform (unit, minute) draws, so FAR translates to alarms per unit per day:
-alarms/unit/day = FAR × 1440. Thresholds are chosen on VALIDATION and then frozen.
-Per-incident recall: an incident counts as caught at a threshold if ANY of its positive windows
-scores strictly above it — the number the administrator cares about.
 """
 from __future__ import annotations
 

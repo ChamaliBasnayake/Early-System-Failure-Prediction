@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{(ROOT / 'app' / 'backend' / 'app.db').as_posix()}")
-# One checkpoint per lead time N. Missing N falls back to the closest available (reported in the response).
+# One checkpoint per lead time N. Missing N falls back to the closest available.
 MODEL_RUNS = {int(k): v for k, v in (p.split(":") for p in os.getenv("MODEL_RUNS", "1:sem_final_N1_s11,5:sem_final_N5_s11,15:sem_final_N15_s11,30:sem_final_N30_s11").split(","))}
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")   # frozen encoder for messages never seen in training (semantic model)
 CHECKPOINT_DIR = ROOT / "results" / "checkpoints"; SCORES_DIR = ROOT / "results" / "scores"; INTERIM = ROOT / "data" / "interim"

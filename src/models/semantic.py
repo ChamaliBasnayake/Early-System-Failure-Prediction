@@ -1,15 +1,4 @@
 """Semantic two-channel LSTM (Phase 5 transfer-learning variant).
-
-Each item is represented by a FROZEN pretrained sentence embedding of its masked message text
-(all-MiniLM-L6-v2, 384-d, built once by src/models/embed_messages.py for every distinct masked text in
-the log — including texts first seen after the training cut), projected to `proj_dim` by a trainable
-linear layer, then [proj ‖ log1p(cnt) ‖ log1p(dt)] → LayerNorm → LSTM, as in v1.
-
-Why: 61 % of test-period lines belong to templates unseen in training (October 2005 software upgrade).
-The template model maps them all to UNK; this model can still place "data cache search parity error
-detected" near "instruction cache parity error corrected". Inductive: the encoder was pretrained on
-general text, nothing is fitted on validation/test; embedding test-period text at inference is exactly
-what deployment would do.
 """
 from __future__ import annotations
 

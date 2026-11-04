@@ -44,8 +44,8 @@ sem_final_noKERNRTSP_N5_s11,exact,success,"Trained without KERNRTSP: the single 
 sem_final_noKERNSOCK_N5_s11,exact,success,Trained without KERNSOCK: on test it predicts KERNSOCK as well as or better than the all-category model (0.0122 vs 0.0063; recall 0.077 vs 0) → generic signal again.
 sem_final_noKERNDTLB_N5_s11,exact,success,Trained without KERNDTLB: not evaluable — 0 validation and 2 test incidents.
 sem_final_rackout_N5_s11,exact,success,"20 % of racks held out of training: on the never-seen racks PR-AUC 0.067 / ROC 0.649 (validation), 0.0134 / 0.706 (test) vs the all-rack model 0.024 / 0.671 and 0.0138 / 0.678 → no penalty for unseen hardware."
-FINAL TEST,contains,,Single test read (tag final-eval-v1); interpreted in docs/phase7_findings.md; thresholds frozen from validation.
-prompt selection,contains,,Gemini prompt-selection run on validation (Phase 10); p2 selected by the pre-registered rule (best ROC); all four prompts rank below chance — the LLM reads silence as health (docs/phase10_findings.md).
+FINAL TEST,contains,,Single test read (tag final-eval-v1); interpreted in the report (Question 3, test results); thresholds frozen from validation.
+prompt selection,contains,,Gemini prompt-selection run on validation (Phase 10); p2 selected by the pre-registered rule (best ROC); all four prompts rank below chance — the LLM reads silence as health (the report (Question 6)).
 "reference, N=",contains,control,Constant-score reference: PR-AUC equals prevalence by construction; the floor every model is compared with.
 baseline confound_lr,contains,,"Content-free confound (time-of-day, day-of-week, volume): ROC 0.53–0.56 on validation, 0.50–0.61 on test — above trivial, far below content models → the content models are not learning the schedule."
 baseline xgboost_content,contains,,"Ablation: content only (no history) — validation ROC 0.58–0.67; on test it still beats the ANN (ROC 0.64–0.73), so the ANN's test shortfall is not only the missing history input."

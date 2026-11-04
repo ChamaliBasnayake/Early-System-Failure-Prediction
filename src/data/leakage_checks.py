@@ -1,15 +1,6 @@
 """Phase 2, step 4 — leakage report (Question 1), v2 (unit-level, two-channel windows).
 
-Asserts and reports:
- (a) chronological order of window ends across splits;
- (b) no specific content (≥3 items) shared across splits; generic patterns reported;
- (c) no TARGET failure line of the labelled unit within the recent-failure guard before the window end
-     (older failures inside a long local window are legitimate history);
- (d) no GLOBAL-channel item later than the window end (nothing from the future);
- (e) mass-incident exclusions applied;
- (f) UNK rate per split and channel; exclusion counts; label counts;
- (g) model-input columns contain no identifiers or labels.
-Writes results/leakage_report.txt and exits non-zero on failure.  Usage: python -m src.data.leakage_checks [--sample]
+Usage: python -m src.data.leakage_checks [--sample]
 """
 from __future__ import annotations
 

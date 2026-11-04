@@ -1,8 +1,5 @@
 """Error analysis of the final ANN by input type and data quality (Question 3.a), on VALIDATION scores (mean of 3 seeds).
 
-Buckets: local channel empty vs non-empty; UNK rate of the global channel; global volume quartiles; hour of day (UTC);
-hard vs uniform negatives (false-alarm rate at the frozen 1 % threshold); failure category (incident recall).
-Output: results/error_buckets.md (+ .csv). Trains nothing; reads only validation scores already on disk.
 Usage: python -m src.models.error_buckets --run-prefix sem_final --N 5
 """
 from __future__ import annotations
@@ -55,7 +52,7 @@ def main() -> None:
     pos = df[df[lab] == 1]; cat = pos.groupby("category").apply(lambda g: pd.Series({"incidents": g.incident_id.nunique(), "windows": len(g), "mean score": round(float(g.score.mean()), 4), "incident recall @ thr": round(float(g.groupby("incident_id").score.max().gt(thr).mean()), 3), "share with empty local channel": round(float((g.n_local == 0).mean()), 3)}), include_groups=False)
     L.append("## Positives by failure category\n\n" + cat.to_markdown() + "\n")
     L.append("## Reading\n- If the EMPTY-local bucket has PR-AUC/prevalence near 1 and the non-empty bucket well above 1, the model's whole signal lives in windows where the midplane itself logged something; the empty bucket is the irreducible-error regime (no input).\n"
-             "- A FAR that is lower on hard negatives than on uniform negatives means the model is not an alert-chaser.\n- UNK buckets on validation are small (2.8 % UNK overall); the test-period effect of UNK (66 %) is in docs/phase7_findings.md F7.4.\n")
+             "- A FAR that is lower on hard negatives than on uniform negatives means the model is not an alert-chaser.\n- UNK buckets on validation are small (2.8 % UNK overall).\n")
     (RESULTS / "error_buckets.md").write_text("\n".join(L), encoding="utf-8"); print("\n".join(L[:6])); print(f"→ {RESULTS / 'error_buckets.md'}")
 
 

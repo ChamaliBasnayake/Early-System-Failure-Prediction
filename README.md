@@ -4,27 +4,33 @@
 job allocation and checkpoint/drain the jobs running on it. **Task:** from the last 60 minutes of log lines, score the
 risk that a kernel-level failure starts on a midplane 1, 5, 15 or 30 minutes ahead.
 
+**Model:** a specialised two-channel LSTM over frozen pretrained text embeddings (all-MiniLM-L6-v2), 101,897 trainable
+parameters. It reads the midplane's own log lines and the whole machine's log lines, understands message types never
+seen in training, and is served by the web application for request-time predictions with Integrated Gradients explanations.
+
 Dataset: BlueGene/L RAS log (Loghub, Zenodo 10.5281/zenodo.8196385, CC BY 4.0), 4.75 M lines, 2005-06-03 → 2006-01-04.
 The raw 743 MB file is not included: `python -m src.data.download` fetches it; `data/sample/bgl_sample.log` (3 MB) lets
 every step run with `--sample`.
 
 ## Folder layout
 ```
-app/        web application: FastAPI backend (app/backend) + React frontend (app/frontend)
-configs/    all settings: failure definition, windows, Drain template miner, model configs
-data/       sample log, the single chronological split (split_v1.json), runtime artefacts in data/interim (see below)
-experiments/log.csv          every training/evaluation run (491 rows); annotations.csv = reviewed "what was learned" notes
-results/    numbers and figures produced by the scripts (see "Results map")
-scripts/    PowerShell batch scripts for the long runs; demo-input generator
-src/        all code: data pipeline, features, baselines, neural models, XAI, Gemini evaluation
-tests/      pytest suite (one file per phase)
+app/         web application: FastAPI backend (app/backend) + React frontend (app/frontend)
+configs/     all settings: failure definition, windows, Drain template miner, model configs
+data/        sample log and the single chronological split (splits/split_v1.json); runtime artefacts go in data/interim
+experiments/ log.csv = every training/evaluation run (491 rows, with what was learned);
+             annotations.csv = the reviewed statements applied to the log;
+             expectation_2026-10-24.md = expectation written before any model was trained
+results/     numbers and figures produced by the scripts (see "Results map")
+scripts/     PowerShell batch scripts for the long runs; demo-input generator
+src/         all code: data pipeline, features, baselines, neural models, XAI, Gemini evaluation
+tests/       pytest suite (34 tests)
 ```
 
 ## Set up (Windows, Anaconda)
 ```powershell
 conda env create -f environment.yml
 conda activate bgl
-pytest --basetemp=E:\pytest-temp          # 34 tests
+pytest --basetemp=E:\pytest-temp
 ```
 `scripts\setup_windows.ps1` does the same plus Node and Docker checks.
 
@@ -49,8 +55,10 @@ python -m src.models.evaluate_conditions --split validation             # 16 all
 python -m src.genai.gemini_eval --split validation; python -m src.genai.gemini_eval --select p2   # 17 prompt selection
 python -m src.models.evaluate_conditions --split test                   # 18 THE single test evaluation
 python -m src.genai.gemini_eval --split test                            # 19 Gemini on the same test windows
-python -m src.xai.perturbation --run sem_final_N5_s11 --n 50; python -m src.xai.cases --run sem_final_N5_s11   # 20 XAI
+python -m src.xai.perturbation --run sem_final_N5_s11 --n 50            # 20 XAI deletion test
+python -m src.xai.cases --run sem_final_N5_s11                          #    XAI case studies (written interpretations are kept on re-run)
 python -m src.models.error_buckets; python -m src.models.shift_analysis # 21 error analysis
+python -m src.models.study_summary                                      #    optimisation-study tables, figures and notes
 python scripts\make_demo_inputs.py --run sem_final_N5_s11              # 22 demo inputs for the app
 ```
 Steps 18–19 refuse to run twice. Gemini needs the `GEMINI_API_KEY` environment variable (never stored in the repo).
@@ -61,7 +69,7 @@ uvicorn app.backend.main:app --port 8000          # backend (loads the final mod
 cd app\frontend; npm install; npm run dev         # frontend at http://localhost:5173
 docker compose up --build                         # or the full stack: Postgres + backend + frontend at :8080
 ```
-Runtime artefacts the app reads (produced by steps 6, 7, 12, 14; included in the submission folder):
+Runtime artefacts the app reads (produced by steps 6, 7, 12 and 14):
 `data/interim/drain_miner.pkl`, `masked_messages.parquet`, `masked_embeddings_minilm.npy`, `templates.csv`,
 `results/checkpoints/sem_final_N{1,5,15,30}_s11.pt`. Demo inputs: `results/demo/` (true positive, missed failure,
 alert-rich negative, quiet negative, invalid text, Thunderbird out-of-distribution log).
@@ -69,13 +77,13 @@ alert-rich negative, quiet negative, invalid text, Thunderbird out-of-distributi
 ## Results map
 | Question | Where |
 |---|---|
-| EDA, failure set, leakage | `results/figures/eda_*.png`, `results/leakage_report.txt`, `results/class_distribution.csv` (full statistics regenerated by steps 3–8) |
+| EDA, leakage | `results/figures/eda_*.png`, `results/leakage_report.txt`, `results/class_distribution.csv` |
 | Baselines and controls | `results/baselines_validation*.csv` (`_randomsplit`, `_tc`, `_system`, `_w6h`, `_w24h` are comparison-only controls) |
-| ANN training | `results/curves/*.json`, `results/figures/curves_*.png`, `results/optimisation_study.md`, `results/figures/study_*.png` |
+| ANN training and optimisation study | `results/curves/*.json`, `results/figures/curves_*.png`, `results/optimisation_study.md` (tables, figures and interpretation), `results/figures/study_*.png` |
 | Validation (all models, all conditions) | `results/validation_eval/` |
-| **Final test (single run)** | `results/test_eval/conditions_test.md`, `final_test_results.json`, `shift_analysis.md` |
+| Final test (single run) | `results/test_eval/conditions_test.md`, `final_test_results.json`, `shift_analysis.md` |
 | Error analysis | `results/error_buckets.md`, `results/test_eval/shift_analysis.md` |
-| XAI | `results/xai_perturbation.md`, `results/xai_cases.md`, `results/figures/xai_perturbation.png` |
+| XAI | `results/xai_perturbation.md`, `results/xai_cases.md` (attributions and interpretations), `results/figures/xai_perturbation.png` |
 | Gemini | `results/genai/gemini_validation_N5.md`, `gemini_test_N5.md`, per-window CSVs, `selected_prompt.json`, `src/genai/prompts/` |
 | Every run | `experiments/log.csv` (phase, change, hyper-parameters, validation result, what was learned, outcome) |
 

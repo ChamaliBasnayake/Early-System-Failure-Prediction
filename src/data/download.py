@@ -1,8 +1,5 @@
 """Phase 1, step 1 — download the BGL dataset from Zenodo and verify it.
 
-The brief (Section 8, Deliverables) requires a reproducible download procedure
-because the raw log exceeds 500 MB. This script is that procedure.
-
 Usage:
     python -m src.data.download            # downloads, verifies MD5, unzips
     python -m src.data.download --force    # re-download even if present

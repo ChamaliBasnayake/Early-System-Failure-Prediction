@@ -1,15 +1,5 @@
 """Phase 3 — baselines, evaluated on VALIDATION only, every configuration logged.
 
-  trivial    : constant score (base rate) → PR-AUC equals prevalence, recall at any FAR = 0 (reference row)
-  confound   : logistic regression on TIME + VOLUME features only (no message content). If a content
-               model cannot beat this clearly, it has learned schedule, not symptoms.
-  xgboost    : gradient boosting on the FULL feature set (content + failure history); 25 random
-               configurations from a fixed search space (same budget as the neural family); selected on
-               validation PR-AUC. The best configuration is then re-fitted on two ABLATION feature sets —
-               content only and history only — to measure how much log CONTENT adds beyond the known
-               clustering of failures in space and time (Q3 error analysis / Q2.b expectation).
-For each lead time N the best model is saved to results/models/, metrics to results/baselines_validation.csv,
-and thresholds at the FAR levels are frozen in results/thresholds_baselines.json for Phase 7.
 Usage: python -m src.models.baselines [--sample] [--n_configs 25] [--N 5] [--tag system] [--tag tc] [--random-split-control]
 """
 from __future__ import annotations

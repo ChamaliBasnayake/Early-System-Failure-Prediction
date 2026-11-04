@@ -1,9 +1,5 @@
 """Phase 1, step 5 — build the representative sample that ships with the code.
 
-The brief requires a sample that lets the code be tested when the full dataset
-is too large to submit. We take a few contiguous time blocks (so sequences stay
-realistic) that together contain several failure episodes and normal periods.
-
 Usage:
     python -m src.data.make_sample --lines 20000
 """

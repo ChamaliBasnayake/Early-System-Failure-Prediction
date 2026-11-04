@@ -1,16 +1,5 @@
 """Phase 6 (validation) / Phase 7 (test, ONCE) — evaluate every model under every condition on one split.
 
-Conditions
-  standard      trivial, confound LR, XGBoost (full / content / history), initial ANN (lstm_v1), final ANN (sem_final, 3 seeds)
-                for every lead time N: PR-AUC, ROC, recall/precision/incident-recall at FAR 0.1 % and 1 %, inference latency,
-                training time (from the experiment log).
-  earliness     recall at fixed FAR vs N per model family (figure), per failure category for the final ANN
-  hard negatives  false-alarm rate on alert-rich negative windows vs ordinary negatives (frozen thresholds)
-  held-out category   sem_final_no<CAT> models (trained without that category) vs the all-category model on <CAT> positives
-  machine-disjoint    sem_final_rackout model vs the all-category model on windows from the held-out racks vs seen racks
-  controls      random-split and transductive-template XGBoost results are read from their result files (comparison only)
-Thresholds: on validation they are DERIVED here (and saved to results/thresholds_final.json); on test they are READ
-from that file (frozen). The test run writes results/test_eval/ and must be run once.
 Usage: python -m src.models.evaluate_conditions --split validation
        python -m src.models.evaluate_conditions --split test        # Phase 7 only
 """

@@ -115,7 +115,3 @@ Probability histogram by label (counts):
 ## Cost
 
 Tokens this run: 1,606,818 input, 78,809 output incl. thinking; pass --price-in/--price-out (USD per 1M tokens from ai.google.dev/pricing on the run day) to print the cost.
-
-## Decision
-
-Choose ONE prompt on this table (ROC-AUC first, then recall@10 % FAR, then unparsable rate) and freeze it: `python -m src.genai.gemini_eval --select pX`. The test run uses only that prompt.

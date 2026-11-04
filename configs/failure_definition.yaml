@@ -1,5 +1,4 @@
-# Failure definition — FROZEN at the end of Phase 1. Any later change needs a row in docs/failure_definition.md.
-# Evidence: results/category_evidence.md and results/eda_alert_component_level.csv.
+# Failure definition — FROZEN at the end of Phase 1.
 target_category_patterns: ["^KERN"]   # kernel-level fatal events; APP* etc. are non-target
 exclude_categories: [KERNMNTF, KERNMNT] # a KERN* category that proves informational can be listed here
 incident_gap_s: 60                    # same-category events anywhere in the system within 60 s = one cluster

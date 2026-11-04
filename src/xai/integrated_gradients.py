@@ -1,17 +1,5 @@
 """Integrated Gradients for the two-channel sequence models (Question 5.b).
 
-What is explained: how much each ITEM of the local and global channels (a collapsed run of one message type)
-and each SCALAR context feature pushed the logit up or down, relative to a baseline window.
-Baseline: the "empty" window — every item embedding replaced by the PAD embedding (what the model sees for
-"nothing was logged") and scalars at 0 (= the training mean after standardisation). Attributions are summed
-over the embedding dimension, so one number per item; by the completeness property they sum (approximately)
-to logit(window) − logit(baseline), which is checked and reported.
-
-Why IG rather than attention or SHAP: the LSTM has no attention weights; KernelSHAP over 2×256 items needs
-thousands of forward passes per window; IG needs `steps` (50) forward+backward passes and is defined for any
-differentiable input. Limitation: IG measures sensitivity along one path from the baseline — it does not
-prove that a line CAUSED the prediction, and correlated items can share or hide attribution.
-Works for TwoChannelLSTM, TwoChannelCNN (template embedding) and TwoChannelSemanticLSTM (projected text embedding).
 """
 from __future__ import annotations
 

@@ -1,25 +1,6 @@
 """The experiment log.
 
-The brief (Section 6, "Experiment log") requires that *every* substantive
-training or evaluation run is recorded, including failures, with what was
-changed, the hyper-parameters, the validation result and what was learned.
-Any number in the report must be traceable to a row here.
-
-Usage at the end of every script::
-
-    from src.utils.runlog import log_run
-    log_run(
-        phase=4, model_family="lstm", purpose="first LSTM, N=5",
-        changed_vs_previous="baseline neural model", config_path="configs/lstm_v1.yaml",
-        key_hyperparams="lr=1e-3;batch=128;hidden=128;layers=1;W=10;N=5",
-        seed=11, split="validation",
-        val_pr_auc=0.31, val_recall_at_far=0.42, val_f1=0.28,
-        train_time_s=412, infer_ms_per_window=0.8,
-        outcome="success",
-        learned="Validation loss flattens after epoch 8; curves suggest underfitting. Next: wider hidden.",
-    )
-
-The log is a plain CSV so it can be opened in Excel and pasted into the report appendix.
+The log is a plain CSV so it can be opened in Excel.
 """
 from __future__ import annotations
 

@@ -1,15 +1,4 @@
 """Two-channel sequence classifier (Phase 4 v1). Variants: cnn.py (1-D CNN), semantic.py (pretrained text embeddings).
-
-                 local items ─► [emb ‖ log1p(cnt) ‖ log1p(dt)] ─► LayerNorm ─► LSTM ─► last state ─┐
-                                                                                                  ├─► concat ─► Dropout ─► FC 64 ─► ReLU ─► Dropout ─► FC 1 ─► logit
-                 global items ─► [emb ‖ log1p(cnt) ‖ log1p(dt)] ─► LayerNorm ─► LSTM ─► last state ─┤
-                 scalar context (time, volume, 17) ──────────────────────────────────────────────────┘
-
-Assumptions about the data (Q2.a): ordered sequences whose order/spacing may matter; one meaning per message
-type in both channels (shared embedding); the unit's own history and the system state are different sources
-(two encoders); repeat counts and gaps carry information beyond identity; schedule/volume handled by scalars;
-an empty channel is informative and becomes a zero vector. Sequences are right-aligned, so the last hidden
-state is the state at the window end; padding sits in front and is skipped via packing.
 """
 from __future__ import annotations
 
